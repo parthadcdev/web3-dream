@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { body, validationResult } from 'express-validator';
 import { Request, Response } from 'express';
 import { asyncHandler } from '../middleware/errorHandler.js';
+import jwt from 'jsonwebtoken';
 
 const router = Router();
 
@@ -67,9 +68,21 @@ router.post('/login', validateUserLogin, asyncHandler(async (req: Request, res: 
   // 3. Generate JWT token
   // 4. Update last login timestamp
 
+  // For demo purposes, generate a real JWT token
+  const secret = process.env.JWT_SECRET || 'tracechain_jwt_secret_key_2025_development';
+  const token = jwt.sign(
+    { 
+      id: '1', 
+      email: email, 
+      role: 'MANUFACTURER' 
+    },
+    secret,
+    { expiresIn: '24h' }
+  );
+
   return res.json({
     message: 'Login successful',
-    token: 'jwt_token_here', // TODO: Generate actual JWT
+    token: token,
     user: {
       email,
       role: 'MANUFACTURER' // TODO: Get from database

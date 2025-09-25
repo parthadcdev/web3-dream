@@ -1,5 +1,7 @@
-import { Router } from 'express';
-const router = Router();
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const router = (0, express_1.Router)();
 // Health check endpoint
 router.get('/', async (req, res) => {
     const healthCheck = {
@@ -63,5 +65,5 @@ router.get('/detailed', async (req, res) => {
         });
     }
 });
-export default router;
+exports.default = router;
 //# sourceMappingURL=health.js.map
