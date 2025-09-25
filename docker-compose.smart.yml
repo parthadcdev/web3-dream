@@ -1,0 +1,203 @@
+version: '3.8'
+
+# Smart Docker Compose with external container detection
+# This approach uses external networks and conditional service definitions
+
+services:
+  # PostgreSQL Database - with external container check
+  postgres:
+    image: postgres:14
+    container_name: tracechain-postgres
+    environment:
+      POSTGRES_DB: tracechain_db
+      POSTGRES_USER: tracechain_user
+      POSTGRES_PASSWORD: tracechain_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - tracechain-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tracechain_user -d tracechain_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    profiles:
+      - postgres
+      - all
+    # Only start if no external PostgreSQL is running
+    deploy:
+      restart_policy:
+        condition: none
+
+  # Redis Cache - with external container check
+  redis:
+    image: redis:7-alpine
+    container_name: tracechain-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - tracechain-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    profiles:
+      - redis
+      - all
+    deploy:
+      restart_policy:
+        condition: none
+
+  # Backend API - can connect to external or internal services
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: tracechain-backend
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      # Smart connection - will use external if available, internal if not
+      DATABASE_URL: postgresql://tracechain_user:tracechain_password@${POSTGRES_HOST:-postgres}:${POSTGRES_PORT:-5432}/tracechain_db
+      REDIS_URL: redis://${REDIS_HOST:-redis}:${REDIS_PORT:-6379}
+      JWT_SECRET: your_jwt_secret_here
+      JWT_EXPIRES_IN: 24h
+      POLYGON_RPC_URL: https://polygon-rpc.com
+      MUMBAI_RPC_URL: https://rpc-mumbai.maticvigil.com
+      # External service detection
+      EXTERNAL_POSTGRES: ${EXTERNAL_POSTGRES:-false}
+      EXTERNAL_REDIS: ${EXTERNAL_REDIS:-false}
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+        required: false  # Make it optional
+      redis:
+        condition: service_healthy
+        required: false  # Make it optional
+    networks:
+      - tracechain-network
+    command: npm run dev
+    profiles:
+      - backend
+      - all
+
+  # Frontend React App
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: tracechain-frontend
+    environment:
+      REACT_APP_API_URL: http://localhost:3000
+      REACT_APP_BLOCKCHAIN_NETWORK: mumbai
+      REACT_APP_PRODUCT_REGISTRY_ADDRESS: 0x1234567890123456789012345678901234567890
+      REACT_APP_NFT_CERTIFICATE_ADDRESS: 0x1234567890123456789012345678901234567890
+    ports:
+      - "3001:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - tracechain-network
+    command: npm start
+    profiles:
+      - frontend
+      - all
+
+  # Hardhat Local Network
+  hardhat:
+    build:
+      context: ./smart-contracts
+      dockerfile: Dockerfile
+    container_name: tracechain-hardhat
+    environment:
+      HARDHAT_NETWORK: localhost
+    ports:
+      - "8545:8545"
+    volumes:
+      - ./smart-contracts:/app
+      - /app/node_modules
+    networks:
+      - tracechain-network
+    command: npx hardhat node
+    profiles:
+      - blockchain
+      - all
+
+  # MQTT Broker for IoT
+  mosquitto:
+    image: eclipse-mosquitto:2.0
+    container_name: tracechain-mqtt
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./infrastructure/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - mosquitto_data:/mosquitto/data
+      - mosquitto_logs:/mosquitto/log
+    networks:
+      - tracechain-network
+    profiles:
+      - mqtt
+      - all
+
+  # Prometheus Monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: tracechain-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infrastructure/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    networks:
+      - tracechain-network
+    profiles:
+      - monitoring
+      - all
+
+  # Grafana Dashboard
+  grafana:
+    image: grafana/grafana:latest
+    container_name: tracechain-grafana
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    ports:
+      - "3003:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./infrastructure/monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./infrastructure/monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+    depends_on:
+      - prometheus
+    networks:
+      - tracechain-network
+    profiles:
+      - monitoring
+      - all
+
+volumes:
+  postgres_data:
+  redis_data:
+  mosquitto_data:
+  mosquitto_logs:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  tracechain-network:
+    driver: bridge
+    external: false

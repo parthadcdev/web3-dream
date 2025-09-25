@@ -276,3 +276,24 @@ deploy-prod: ## Deploy to production
 deploy-rollback: ## Rollback deployment
 	@echo "⏪ Rolling back deployment..."
 	./deploy-app.sh rollback
+
+# Smart Docker Commands
+docker-smart: ## Start services with smart container detection
+	@echo "🧠 Starting services with smart container detection..."
+	./scripts/docker-smart-start.sh start
+
+docker-conditional: ## Start services with conditional logic
+	@echo "🔄 Starting services with conditional logic..."
+	./scripts/docker-conditional-start.sh start
+
+docker-external: ## Start services connecting to external PostgreSQL/Redis
+	@echo "🔗 Starting services with external database connections..."
+	docker-compose -f docker-compose.external.yml up -d
+
+docker-status: ## Show smart Docker service status
+	@echo "📊 Showing smart Docker service status..."
+	./scripts/docker-smart-start.sh status
+
+docker-stop-smart: ## Stop smart Docker services
+	@echo "🛑 Stopping smart Docker services..."
+	./scripts/docker-smart-start.sh stop
