@@ -223,3 +223,56 @@ mcp-analyze: ## Run MCP analysis on project
 mcp-health: ## Check project health via MCP
 	@echo "📊 Checking project health..."
 	./run-mcp.sh health
+
+# Build and Run Commands
+build: ## Build all components
+	@echo "🔨 Building all components..."
+	./build-app.sh all
+
+build-clean: ## Clean build all components
+	@echo "🧹 Cleaning and building all components..."
+	./build-app.sh -c all
+
+build-prod: ## Build for production
+	@echo "🏭 Building for production..."
+	./build-app.sh -e production all
+
+run: ## Run the application
+	@echo "🚀 Running TraceChain application..."
+	./run-app.sh all
+
+run-dev: ## Run in development mode
+	@echo "🔧 Running in development mode..."
+	./run-app.sh dev
+
+run-prod: ## Run in production mode
+	@echo "🏭 Running in production mode..."
+	./run-app.sh prod
+
+run-stop: ## Stop all services
+	@echo "🛑 Stopping all services..."
+	./run-app.sh stop
+
+run-restart: ## Restart all services
+	@echo "🔄 Restarting all services..."
+	./run-app.sh restart
+
+run-status: ## Show service status
+	@echo "📊 Showing service status..."
+	./run-app.sh status
+
+run-logs: ## Show service logs
+	@echo "📄 Showing service logs..."
+	./run-app.sh logs
+
+deploy: ## Deploy to staging
+	@echo "🚀 Deploying to staging..."
+	./deploy-app.sh -e staging all
+
+deploy-prod: ## Deploy to production
+	@echo "🏭 Deploying to production..."
+	./deploy-app.sh -e production all
+
+deploy-rollback: ## Rollback deployment
+	@echo "⏪ Rolling back deployment..."
+	./deploy-app.sh rollback
