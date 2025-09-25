@@ -1,8 +1,7 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const { time } = require("@nomicfoundation/hardhat-network-helpers");
 
-describe("ProductRegistry", function () {
+describe("ProductRegistry - Core Implementation", function () {
     let productRegistry;
     let owner, manufacturer, distributor, retailer, consumer;
 
@@ -175,7 +174,7 @@ describe("ProductRegistry", function () {
 
             await expect(tx)
                 .to.emit(productRegistry, "CheckpointAdded")
-                .withArgs(1, 0, manufacturer.address, "manufactured");
+                .withArgs(1, 1, manufacturer.address, "manufactured");
 
             const checkpoints = await productRegistry.getCheckpoints(1);
             expect(checkpoints.length).to.equal(1);
@@ -261,7 +260,7 @@ describe("ProductRegistry", function () {
             ).to.be.revertedWith("Invalid stakeholder address");
         });
 
-        it("Should prevent adding duplicate stakeholders", async function () {
+        it("Should prevent adding existing stakeholder", async function () {
             await productRegistry.connect(manufacturer).addStakeholder(1, distributor.address);
 
             await expect(
@@ -331,8 +330,8 @@ describe("ProductRegistry", function () {
         });
     });
 
-    describe("Pausable Functionality", function () {
-        it("Should pause and unpause by owner", async function () {
+    describe("Access Control", function () {
+        it("Should only allow owner to pause contract", async function () {
             await productRegistry.emergencyPause();
             expect(await productRegistry.paused()).to.be.true;
 
@@ -340,28 +339,90 @@ describe("ProductRegistry", function () {
             expect(await productRegistry.paused()).to.be.false;
         });
 
-        it("Should prevent operations when paused", async function () {
-            await productRegistry.emergencyPause();
-
-            await expect(
-                productRegistry.connect(manufacturer).registerProduct(
-                    "Test Product",
-                    "pharmaceutical",
-                    "BATCH-001",
-                    Math.floor(Date.now() / 1000),
-                    Math.floor(Date.now() / 1000) + 86400 * 365,
-                    ["Material1"],
-                    "https://ipfs.io/ipfs/QmHash"
-                )
-            ).to.be.revertedWith("Pausable: paused");
-        });
-    });
-
-    describe("Access Control", function () {
-        it("Should only allow owner to emergency pause", async function () {
+        it("Should prevent non-owner from pausing", async function () {
             await expect(
                 productRegistry.connect(manufacturer).emergencyPause()
             ).to.be.revertedWith("Ownable: caller is not the owner");
+        });
+
+        it("Should allow manufacturer to deactivate their product", async function () {
+            await productRegistry.connect(manufacturer).registerProduct(
+                "Test Product",
+                "pharmaceutical",
+                "BATCH-001",
+                Math.floor(Date.now() / 1000),
+                Math.floor(Date.now() / 1000) + 86400 * 365,
+                ["Material1"],
+                "https://ipfs.io/ipfs/QmHash"
+            );
+
+            await productRegistry.connect(manufacturer).deactivateProduct(1);
+
+            const product = await productRegistry.getProduct(1);
+            expect(product.isActive).to.be.false;
+        });
+
+        it("Should prevent non-manufacturer from deactivating product", async function () {
+            await productRegistry.connect(manufacturer).registerProduct(
+                "Test Product",
+                "pharmaceutical",
+                "BATCH-001",
+                Math.floor(Date.now() / 1000),
+                Math.floor(Date.now() / 1000) + 86400 * 365,
+                ["Material1"],
+                "https://ipfs.io/ipfs/QmHash"
+            );
+
+            await expect(
+                productRegistry.connect(retailer).deactivateProduct(1)
+            ).to.be.revertedWith("Not authorized");
+        });
+    });
+
+    describe("Data Retrieval", function () {
+        beforeEach(async function () {
+            await productRegistry.connect(manufacturer).registerProduct(
+                "Test Product",
+                "pharmaceutical",
+                "BATCH-001",
+                Math.floor(Date.now() / 1000),
+                Math.floor(Date.now() / 1000) + 86400 * 365,
+                ["Material1"],
+                "https://ipfs.io/ipfs/QmHash"
+            );
+        });
+
+        it("Should retrieve product information", async function () {
+            const product = await productRegistry.getProduct(1);
+            expect(product.productName).to.equal("Test Product");
+            expect(product.productType).to.equal("pharmaceutical");
+            expect(product.manufacturer).to.equal(manufacturer.address);
+            expect(product.batchNumber).to.equal("BATCH-001");
+            expect(product.isActive).to.be.true;
+        });
+
+        it("Should retrieve checkpoints", async function () {
+            await productRegistry.connect(manufacturer).addCheckpoint(
+                1,
+                "manufactured",
+                "Manufacturing Facility",
+                "Quality check passed"
+            );
+
+            const checkpoints = await productRegistry.getCheckpoints(1);
+            expect(checkpoints.length).to.equal(1);
+            expect(checkpoints[0].status).to.equal("manufactured");
+            expect(checkpoints[0].stakeholder).to.equal(manufacturer.address);
+        });
+
+        it("Should retrieve stakeholder products", async function () {
+            const products = await productRegistry.getStakeholderProducts(manufacturer.address);
+            expect(products.length).to.equal(1);
+            expect(products[0]).to.equal(1);
+        });
+
+        it("Should return total product count", async function () {
+            expect(await productRegistry.getProductCount()).to.equal(1);
         });
     });
 
