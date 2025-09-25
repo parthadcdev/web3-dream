@@ -115,8 +115,18 @@ contract NFTCertificate is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard {
         // Find certificate by verification code
         for (uint256 i = 0; i < _tokenIdCounter.current(); i++) {
             if (keccak256(bytes(certificates[i].verificationCode)) == keccak256(bytes(_verificationCode))) {
-                (bool isValid, string memory reason) = verifyCertificate(i);
-                return (i, isValid, reason);
+                // Call the internal verification logic directly instead of external function
+                Certificate memory cert = certificates[i];
+                
+                if (!cert.isValid) {
+                    return (i, false, "Certificate has been invalidated");
+                }
+                
+                if (block.timestamp > cert.expiryDate) {
+                    return (i, false, "Certificate has expired");
+                }
+                
+                return (i, true, "Certificate is valid");
             }
         }
         

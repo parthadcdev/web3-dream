@@ -4,11 +4,11 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
-import { errorHandler } from './middleware/errorHandler';
-import { authMiddleware } from './middleware/auth';
-import productRoutes from './routes/products';
-import userRoutes from './routes/users';
-import healthRoutes from './routes/health';
+import { errorHandler } from './middleware/errorHandler.js';
+import { authMiddleware } from './middleware/auth.js';
+import productRoutes from './routes/products.js';
+import userRoutes from './routes/users.js';
+import healthRoutes from './routes/health.js';
 
 // Load environment variables
 dotenv.config();

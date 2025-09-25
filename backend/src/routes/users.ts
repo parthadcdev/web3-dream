@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { body, validationResult } from 'express-validator';
 import { Request, Response } from 'express';
-import { asyncHandler } from '../middleware/errorHandler';
+import { asyncHandler } from '../middleware/errorHandler.js';
 
 const router = Router();
 
@@ -38,7 +38,7 @@ router.post('/register', validateUserRegistration, asyncHandler(async (req: Requ
   // 4. Generate JWT token
   // 5. Send welcome email
 
-  res.status(201).json({
+  return res.status(201).json({
     message: 'User registered successfully',
     user: {
       email,
@@ -67,7 +67,7 @@ router.post('/login', validateUserLogin, asyncHandler(async (req: Request, res: 
   // 3. Generate JWT token
   // 4. Update last login timestamp
 
-  res.json({
+  return res.json({
     message: 'Login successful',
     token: 'jwt_token_here', // TODO: Generate actual JWT
     user: {
@@ -99,7 +99,7 @@ router.post('/wallet-auth', [
   // 3. Create user if doesn't exist
   // 4. Generate JWT token
 
-  res.json({
+  return res.json({
     message: 'Wallet authentication successful',
     token: 'jwt_token_here', // TODO: Generate actual JWT
     user: {
@@ -112,7 +112,7 @@ router.post('/wallet-auth', [
 // Get user profile
 router.get('/profile', asyncHandler(async (req: Request, res: Response) => {
   // TODO: Get user profile from database
-  res.json({
+  return res.json({
     user: {
       id: 'user_id',
       email: 'user@example.com',
@@ -142,7 +142,7 @@ router.put('/profile', [
 
   // TODO: Update user profile in database
 
-  res.json({
+  return res.json({
     message: 'Profile updated successfully',
     user: updates
   });

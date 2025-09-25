@@ -23,7 +23,7 @@ LOG_DIR="$PROJECT_ROOT/logs"
 DEPLOY_ENV=${DEPLOY_ENV:-"staging"}
 DEPLOY_TARGET=${DEPLOY_TARGET:-"all"} # all, smart-contracts, backend, frontend, infrastructure
 DEPLOY_REGION=${DEPLOY_REGION:-"us-east-1"}
-DEPLOY_PROVIDER=${DEPLOY_PROVIDER:-"docker"} # docker, kubernetes, aws, gcp, azure
+DEPLOY_PROVIDER=${DEPLOY_PROVIDER:-"podman"} # podman, kubernetes, aws, gcp, azure
 
 # Function to print status messages
 print_status() {
@@ -56,7 +56,7 @@ show_help() {
     echo "Options:"
     echo "  -e, --env ENV        Deployment environment (staging|production)"
     echo "  -r, --region REGION  Deployment region (default: us-east-1)"
-    echo "  -p, --provider PROV  Deployment provider (docker|kubernetes|aws|gcp|azure)"
+    echo "  -p, --provider PROV  Deployment provider (podman|kubernetes|aws|gcp|azure)"
     echo "  -c, --config FILE    Custom deployment configuration file"
     echo "  -d, --dry-run        Show what would be deployed without actually deploying"
     echo "  -v, --verbose        Verbose output"
@@ -103,12 +103,12 @@ validate_environment() {
     esac
     
     case "$DEPLOY_PROVIDER" in
-        "docker"|"kubernetes"|"aws"|"gcp"|"azure")
+        "podman"|"kubernetes"|"aws"|"gcp"|"azure")
             print_status "Provider validated: $DEPLOY_PROVIDER"
             ;;
         *)
             print_error "Invalid deployment provider: $DEPLOY_PROVIDER"
-            print_info "Valid providers: docker, kubernetes, aws, gcp, azure"
+            print_info "Valid providers: podman, kubernetes, aws, gcp, azure"
             exit 1
             ;;
     esac
@@ -122,12 +122,12 @@ check_prerequisites() {
     
     # Check required tools based on provider
     case "$DEPLOY_PROVIDER" in
-        "docker")
-            if ! command -v docker &> /dev/null; then
-                missing_deps+=("docker")
+        "podman")
+            if ! command -v podman &> /dev/null; then
+                missing_deps+=("podman")
             fi
-            if ! command -v docker-compose &> /dev/null; then
-                missing_deps+=("docker-compose")
+            if ! command -v podman-compose &> /dev/null; then
+                missing_deps+=("podman-compose")
             fi
             ;;
         "kubernetes")
@@ -257,8 +257,8 @@ deploy_backend() {
     print_header "Deploying Backend API"
     
     case "$DEPLOY_PROVIDER" in
-        "docker")
-            deploy_backend_docker
+        "podman")
+            deploy_backend_podman
             ;;
         "kubernetes")
             deploy_backend_kubernetes
@@ -273,28 +273,28 @@ deploy_backend() {
     esac
 }
 
-deploy_backend_docker() {
-    print_info "Deploying backend using Docker..."
+deploy_backend_podman() {
+    print_info "Deploying backend using Podman..."
     
-    # Build backend Docker image
-    docker build -t "tracechain-backend:$DEPLOY_ENV" -f "$PROJECT_ROOT/backend/Dockerfile" "$PROJECT_ROOT/backend"
+    # Build backend Podman image
+    podman build -t "tracechain-backend:$DEPLOY_ENV" -f "$PROJECT_ROOT/backend/Dockerfile" "$PROJECT_ROOT/backend"
     
     if [ $? -eq 0 ]; then
-        print_status "Backend Docker image built successfully"
+        print_status "Backend Podman image built successfully"
         
-        # Deploy using docker-compose
+        # Deploy using podman-compose
         case "$DEPLOY_ENV" in
             "staging")
-                docker-compose -f docker-compose.yml -f docker-compose.staging.yml up -d backend
+                podman-compose -f docker-compose.yml -f docker-compose.staging.yml up -d backend
                 ;;
             "production")
-                docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d backend
+                podman-compose -f docker-compose.yml -f docker-compose.prod.yml up -d backend
                 ;;
         esac
         
         print_status "Backend deployed successfully"
     else
-        print_error "Backend Docker deployment failed"
+        print_error "Backend Podman deployment failed"
         return 1
     fi
 }
@@ -325,8 +325,8 @@ deploy_frontend() {
     print_header "Deploying Frontend"
     
     case "$DEPLOY_PROVIDER" in
-        "docker")
-            deploy_frontend_docker
+        "podman")
+            deploy_frontend_podman
             ;;
         "kubernetes")
             deploy_frontend_kubernetes
@@ -341,28 +341,28 @@ deploy_frontend() {
     esac
 }
 
-deploy_frontend_docker() {
-    print_info "Deploying frontend using Docker..."
+deploy_frontend_podman() {
+    print_info "Deploying frontend using Podman..."
     
-    # Build frontend Docker image
-    docker build -t "tracechain-frontend:$DEPLOY_ENV" -f "$PROJECT_ROOT/frontend/Dockerfile" "$PROJECT_ROOT/frontend"
+    # Build frontend Podman image
+    podman build -t "tracechain-frontend:$DEPLOY_ENV" -f "$PROJECT_ROOT/frontend/Dockerfile" "$PROJECT_ROOT/frontend"
     
     if [ $? -eq 0 ]; then
-        print_status "Frontend Docker image built successfully"
+        print_status "Frontend Podman image built successfully"
         
-        # Deploy using docker-compose
+        # Deploy using podman-compose
         case "$DEPLOY_ENV" in
             "staging")
-                docker-compose -f docker-compose.yml -f docker-compose.staging.yml up -d frontend
+                podman-compose -f docker-compose.yml -f docker-compose.staging.yml up -d frontend
                 ;;
             "production")
-                docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d frontend
+                podman-compose -f docker-compose.yml -f docker-compose.prod.yml up -d frontend
                 ;;
         esac
         
         print_status "Frontend deployed successfully"
     else
-        print_error "Frontend Docker deployment failed"
+        print_error "Frontend Podman deployment failed"
         return 1
     fi
 }
@@ -393,8 +393,8 @@ deploy_infrastructure() {
     print_header "Deploying Infrastructure"
     
     case "$DEPLOY_PROVIDER" in
-        "docker")
-            deploy_infrastructure_docker
+        "podman")
+            deploy_infrastructure_podman
             ;;
         "kubernetes")
             deploy_infrastructure_kubernetes
@@ -409,16 +409,16 @@ deploy_infrastructure() {
     esac
 }
 
-deploy_infrastructure_docker() {
-    print_info "Deploying infrastructure using Docker..."
+deploy_infrastructure_podman() {
+    print_info "Deploying infrastructure using Podman..."
     
     # Deploy database, cache, and monitoring services
     case "$DEPLOY_ENV" in
         "staging")
-            docker-compose -f docker-compose.yml -f docker-compose.staging.yml up -d postgres redis prometheus grafana
+            podman-compose -f docker-compose.yml -f docker-compose.staging.yml up -d postgres redis prometheus grafana
             ;;
         "production")
-            docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d postgres redis prometheus grafana
+            podman-compose -f docker-compose.yml -f docker-compose.prod.yml up -d postgres redis prometheus grafana
             ;;
     esac
     
@@ -471,7 +471,7 @@ perform_health_checks() {
     
     # Check database connectivity
     total_health_checks=$((total_health_checks + 1))
-    if docker-compose exec -T postgres pg_isready -U tracechain_user > /dev/null 2>&1; then
+    if podman-compose exec -T postgres pg_isready -U tracechain_user > /dev/null 2>&1; then
         print_status "Database health check passed"
         health_checks_passed=$((health_checks_passed + 1))
     else
@@ -480,7 +480,7 @@ perform_health_checks() {
     
     # Check Redis connectivity
     total_health_checks=$((total_health_checks + 1))
-    if docker-compose exec -T redis redis-cli ping | grep -q "PONG"; then
+    if podman-compose exec -T redis redis-cli ping | grep -q "PONG"; then
         print_status "Redis health check passed"
         health_checks_passed=$((health_checks_passed + 1))
     else
@@ -505,12 +505,12 @@ rollback_deployment() {
     print_info "Rolling back to previous version..."
     
     case "$DEPLOY_PROVIDER" in
-        "docker")
-            # Rollback Docker services
-            docker-compose down
-            docker-compose up -d --scale backend=0 --scale frontend=0
+        "podman")
+            # Rollback Podman services
+            podman-compose down
+            podman-compose up -d --scale backend=0 --scale frontend=0
             sleep 5
-            docker-compose up -d
+            podman-compose up -d
             ;;
         "kubernetes")
             # Rollback Kubernetes deployments
@@ -608,8 +608,8 @@ deploy_all() {
         echo "  • Monitoring: http://localhost:3003"
         echo ""
         print_info "Management Commands:"
-        echo "  • Check status: docker-compose ps"
-        echo "  • View logs: docker-compose logs -f"
+        echo "  • Check status: podman-compose ps"
+        echo "  • View logs: podman-compose logs -f"
         echo "  • Rollback: $0 rollback"
     else
         print_error "Deployment failed after ${deploy_duration}s"

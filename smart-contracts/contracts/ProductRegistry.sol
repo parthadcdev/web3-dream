@@ -13,7 +13,7 @@ contract ProductRegistry is Ownable, ReentrancyGuard, Pausable {
         uint256 productId;
         string productName;
         string productType; // "pharmaceutical", "luxury", "electronics"
-        string manufacturer;
+        address manufacturer;
         string batchNumber;
         uint256 manufactureDate;
         uint256 expiryDate;
@@ -94,6 +94,10 @@ contract ProductRegistry is Ownable, ReentrancyGuard, Pausable {
 
         uint256 productId = nextProductId++;
         
+        // Create stakeholders array
+        address[] memory initialStakeholders = new address[](1);
+        initialStakeholders[0] = msg.sender;
+        
         products[productId] = Product({
             productId: productId,
             productName: _productName,
@@ -103,7 +107,7 @@ contract ProductRegistry is Ownable, ReentrancyGuard, Pausable {
             manufactureDate: _manufactureDate,
             expiryDate: _expiryDate,
             rawMaterials: _rawMaterials,
-            stakeholders: [msg.sender],
+            stakeholders: initialStakeholders,
             isActive: true,
             metadataURI: _metadataURI
         });
@@ -125,7 +129,7 @@ contract ProductRegistry is Ownable, ReentrancyGuard, Pausable {
         string memory _status,
         string memory _location,
         string memory _additionalData
-    ) public onlyStakeholder(_productId) whenNotPaused nonReentrant {
+    ) public onlyStakeholder(_productId) whenNotPaused {
         require(bytes(_status).length > 0, "Status required");
 
         Checkpoint memory newCheckpoint = Checkpoint({

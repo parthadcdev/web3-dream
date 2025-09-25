@@ -21,7 +21,7 @@ LOG_DIR="$PROJECT_ROOT/logs"
 
 # Build configuration
 BUILD_ENV=${BUILD_ENV:-"development"}
-BUILD_TARGET=${BUILD_TARGET:-"all"} # all, smart-contracts, backend, frontend, docker
+BUILD_TARGET=${BUILD_TARGET:-"all"} # all, smart-contracts, backend, frontend, podman
 
 # Function to print status messages
 print_status() {
@@ -63,7 +63,7 @@ show_help() {
     echo "  smart-contracts      Build smart contracts only"
     echo "  backend              Build backend only"
     echo "  frontend             Build frontend only"
-    echo "  docker               Build Docker images only"
+    echo "  podman               Build Podman images only"
     echo "  test                 Build and run tests"
     echo "  deploy               Build for deployment"
     echo ""
@@ -217,34 +217,34 @@ build_frontend() {
     fi
 }
 
-# Function to build Docker images
-build_docker() {
-    print_header "Building Docker Images"
+# Function to build Podman images
+build_podman() {
+    print_header "Building Podman Images"
     
     if [ ! -f "$PROJECT_ROOT/docker-compose.yml" ]; then
         print_error "Docker Compose file not found"
         return 1
     fi
     
-    print_info "Building Docker images..."
+    print_info "Building Podman images..."
     
     # Build images based on environment
     case "$BUILD_ENV" in
         "production")
-            docker-compose -f docker-compose.yml -f docker-compose.prod.yml build --no-cache
+            podman-compose -f docker-compose.yml -f docker-compose.prod.yml build --no-cache
             ;;
         "staging")
-            docker-compose -f docker-compose.yml -f docker-compose.staging.yml build --no-cache
+            podman-compose -f docker-compose.yml -f docker-compose.staging.yml build --no-cache
             ;;
         *)
-            docker-compose build --no-cache
+            podman-compose build --no-cache
             ;;
     esac
     
     if [ $? -eq 0 ]; then
-        print_status "Docker images built successfully"
+        print_status "Podman images built successfully"
     else
-        print_error "Docker image build failed"
+        print_error "Podman image build failed"
         return 1
     fi
 }
@@ -376,8 +376,8 @@ build_all() {
             build_frontend
             if [ $? -ne 0 ]; then build_results=$((build_results + 1)); fi
             ;;
-        "docker")
-            build_docker
+        "podman")
+            build_podman
             if [ $? -ne 0 ]; then build_results=$((build_results + 1)); fi
             ;;
         "test")
@@ -385,7 +385,7 @@ build_all() {
             if [ $? -ne 0 ]; then build_results=$((build_results + 1)); fi
             ;;
         "deploy")
-            build_smart_contracts && build_backend && build_frontend && build_docker
+            build_smart_contracts && build_backend && build_frontend && build_podman
             if [ $? -eq 0 ]; then
                 create_deployment_package
             else
@@ -402,7 +402,7 @@ build_all() {
             build_frontend
             if [ $? -ne 0 ]; then build_results=$((build_results + 1)); fi
             
-            build_docker
+            build_podman
             if [ $? -ne 0 ]; then build_results=$((build_results + 1)); fi
             ;;
     esac
@@ -473,11 +473,11 @@ esac
 
 # Validate build target
 case "$BUILD_TARGET" in
-    "all"|"smart-contracts"|"backend"|"frontend"|"docker"|"test"|"deploy")
+    "all"|"smart-contracts"|"backend"|"frontend"|"podman"|"test"|"deploy")
         ;;
     *)
         print_error "Invalid build target: $BUILD_TARGET"
-        print_info "Valid targets: all, smart-contracts, backend, frontend, docker, test, deploy"
+        print_info "Valid targets: all, smart-contracts, backend, frontend, podman, test, deploy"
         exit 1
         ;;
 esac

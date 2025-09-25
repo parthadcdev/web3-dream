@@ -45,11 +45,11 @@ build-frontend: ## Build frontend
 	cd frontend && npm run build
 
 # Development commands
-start: ## Start all services with Docker Compose
-	docker-compose up -d
+start: ## Start all services with Podman Compose
+	podman-compose up -d
 
 start-dev: ## Start all services in development mode
-	docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+	podman-compose -f docker-compose.yml -f docker-compose.dev.yml up
 
 start-smart-contracts: ## Start Hardhat local network
 	cd smart-contracts && npm run node
@@ -96,27 +96,27 @@ deploy-mumbai: ## Deploy smart contracts to Mumbai testnet
 deploy-polygon: ## Deploy smart contracts to Polygon mainnet
 	cd smart-contracts && npm run deploy:polygon
 
-# Docker commands
+# Podman commands
 stop: ## Stop all services
-	docker-compose down
+	podman-compose down
 
 stop-all: ## Stop all services and remove volumes
-	docker-compose down -v
+	podman-compose down -v
 
 restart: ## Restart all services
-	docker-compose restart
+	podman-compose restart
 
 logs: ## Show logs for all services
-	docker-compose logs -f
+	podman-compose logs -f
 
 logs-backend: ## Show backend logs
-	docker-compose logs -f backend
+	podman-compose logs -f backend
 
 logs-frontend: ## Show frontend logs
-	docker-compose logs -f frontend
+	podman-compose logs -f frontend
 
 logs-smart-contracts: ## Show smart contracts logs
-	docker-compose logs -f hardhat
+	podman-compose logs -f hardhat
 
 # Cleanup commands
 clean: ## Clean all build artifacts and dependencies
@@ -124,12 +124,12 @@ clean: ## Clean all build artifacts and dependencies
 	cd smart-contracts && npm run clean && rm -rf node_modules
 	cd backend && rm -rf dist node_modules
 	cd frontend && rm -rf build node_modules
-	docker-compose down -v
-	docker system prune -f
+	podman-compose down -v
+	podman system prune -f
 
-clean-docker: ## Clean Docker images and containers
-	docker-compose down -v
-	docker system prune -af
+clean-podman: ## Clean Podman images and containers
+	podman-compose down -v
+	podman system prune -af
 
 # Security commands
 audit: ## Run security audits
@@ -189,7 +189,7 @@ dev: ## Start development environment
 # Status check
 status: ## Show status of all services
 	@echo "Service Status:"
-	@docker-compose ps
+	@podman-compose ps
 
 # MCP Commands
 mcp-setup: ## Setup MCP integration with Cursor IDE
@@ -277,23 +277,23 @@ deploy-rollback: ## Rollback deployment
 	@echo "⏪ Rolling back deployment..."
 	./deploy-app.sh rollback
 
-# Smart Docker Commands
-docker-smart: ## Start services with smart container detection
+# Smart Podman Commands
+podman-smart: ## Start services with smart container detection
 	@echo "🧠 Starting services with smart container detection..."
-	./scripts/docker-smart-start.sh start
+	./scripts/podman-smart-start.sh start
 
-docker-conditional: ## Start services with conditional logic
+podman-conditional: ## Start services with conditional logic
 	@echo "🔄 Starting services with conditional logic..."
-	./scripts/docker-conditional-start.sh start
+	./scripts/podman-conditional-start.sh start
 
-docker-external: ## Start services connecting to external PostgreSQL/Redis
+podman-external: ## Start services connecting to external PostgreSQL/Redis
 	@echo "🔗 Starting services with external database connections..."
-	docker-compose -f docker-compose.external.yml up -d
+	podman-compose -f docker-compose.external.yml up -d
 
-docker-status: ## Show smart Docker service status
-	@echo "📊 Showing smart Docker service status..."
-	./scripts/docker-smart-start.sh status
+podman-status: ## Show smart Podman service status
+	@echo "📊 Showing smart Podman service status..."
+	./scripts/podman-smart-start.sh status
 
-docker-stop-smart: ## Stop smart Docker services
-	@echo "🛑 Stopping smart Docker services..."
-	./scripts/docker-smart-start.sh stop
+podman-stop-smart: ## Stop smart Podman services
+	@echo "🛑 Stopping smart Podman services..."
+	./scripts/podman-smart-start.sh stop

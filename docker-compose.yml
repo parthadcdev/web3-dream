@@ -1,5 +1,9 @@
 version: '3.8'
 
+# Podman Compose configuration
+# Use: podman-compose up -d
+# or: podman compose up -d (if using newer Podman versions)
+
 services:
   # PostgreSQL Database
   postgres:
@@ -78,6 +82,7 @@ services:
       REACT_APP_BLOCKCHAIN_NETWORK: mumbai
       REACT_APP_PRODUCT_REGISTRY_ADDRESS: 0x1234567890123456789012345678901234567890
       REACT_APP_NFT_CERTIFICATE_ADDRESS: 0x1234567890123456789012345678901234567890
+      NODE_OPTIONS: "--max-old-space-size=4096"
     ports:
       - "3001:3000"
     volumes:
@@ -88,6 +93,12 @@ services:
     networks:
       - tracechain-network
     command: npm start
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 1G
 
   # Hardhat Local Network
   hardhat:

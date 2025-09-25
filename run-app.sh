@@ -64,7 +64,7 @@ show_help() {
     echo ""
     echo "Modes:"
     echo "  all                  Run all services (default)"
-    echo "  services             Run Docker services only"
+    echo "  services             Run Podman services only"
     echo "  smart-contracts      Run Hardhat node only"
     echo "  backend              Run backend API only"
     echo "  frontend             Run frontend only"
@@ -123,35 +123,35 @@ wait_for_service() {
 
 # Function to start Docker services
 start_services() {
-    print_header "Starting Docker Services"
+    print_header "Starting Podman Services"
     
     if [ ! -f "$PROJECT_ROOT/docker-compose.yml" ]; then
         print_error "Docker Compose file not found"
         return 1
     fi
     
-    # Check if Docker is running
-    if ! docker info > /dev/null 2>&1; then
-        print_error "Docker is not running. Please start Docker first."
+    # Check if Podman is running
+    if ! podman info > /dev/null 2>&1; then
+        print_error "Podman is not running. Please start Podman first."
         return 1
     fi
     
-    print_info "Starting Docker services..."
+    print_info "Starting Podman services..."
     
     case "$RUN_ENV" in
         "production")
-            docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+            podman-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
             ;;
         "staging")
-            docker-compose -f docker-compose.yml -f docker-compose.staging.yml up -d
+            podman-compose -f docker-compose.yml -f docker-compose.staging.yml up -d
             ;;
         *)
-            docker-compose up -d
+            podman-compose up -d
             ;;
     esac
     
     if [ $? -eq 0 ]; then
-        print_status "Docker services started"
+        print_status "Podman services started"
         
         # Wait for critical services
         sleep 5
@@ -332,9 +332,9 @@ stop_all() {
         rm -f "$PID_DIR/hardhat.pid"
     fi
     
-    # Stop Docker services
-    print_info "Stopping Docker services..."
-    docker-compose down 2>/dev/null || true
+    # Stop Podman services
+    print_info "Stopping Podman services..."
+    podman-compose down 2>/dev/null || true
     
     print_status "All services stopped"
 }
@@ -343,9 +343,9 @@ stop_all() {
 show_status() {
     print_header "Service Status"
     
-    # Check Docker services
-    print_info "Docker Services:"
-    docker-compose ps 2>/dev/null || print_warning "Docker services not running"
+    # Check Podman services
+    print_info "Podman Services:"
+    podman-compose ps 2>/dev/null || print_warning "Podman services not running"
     
     # Check individual processes
     echo ""

@@ -113,7 +113,7 @@ describe("ProductRegistry", function () {
 
       await expect(tx)
         .to.emit(productRegistry, "CheckpointAdded")
-        .withArgs(1, 0, manufacturer.address, "shipped");
+        .withArgs(1, 1, manufacturer.address, "shipped");
 
       const checkpoints = await productRegistry.getCheckpoints(1);
       expect(checkpoints.length).to.equal(2); // 1 initial + 1 added
@@ -163,9 +163,12 @@ describe("ProductRegistry", function () {
     });
 
     it("Should prevent adding existing stakeholder", async function () {
-      // Try to add manufacturer as stakeholder again
+      // Add a new stakeholder first
+      await productRegistry.connect(manufacturer).addStakeholder(1, distributor.address);
+      
+      // Try to add the same stakeholder again
       await expect(
-        productRegistry.connect(manufacturer).addStakeholder(1, manufacturer.address)
+        productRegistry.connect(manufacturer).addStakeholder(1, distributor.address)
       ).to.be.revertedWith("Stakeholder already exists");
     });
 

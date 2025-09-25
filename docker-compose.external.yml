@@ -1,7 +1,8 @@
 version: '3.8'
 
-# Docker Compose for connecting to external services
+# Podman Compose for connecting to external services
 # Use this when you want to connect to existing PostgreSQL/Redis instances
+# Usage: podman-compose -f docker-compose.external.yml up -d
 
 services:
   # Backend API - connects to external services

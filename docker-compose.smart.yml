@@ -1,7 +1,8 @@
 version: '3.8'
 
-# Smart Docker Compose with external container detection
+# Smart Podman Compose with external container detection
 # This approach uses external networks and conditional service definitions
+# Usage: podman-compose -f docker-compose.smart.yml up -d
 
 services:
   # PostgreSQL Database - with external container check

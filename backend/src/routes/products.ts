@@ -1,8 +1,8 @@
 import { Router } from 'express';
 import { body, validationResult, query } from 'express-validator';
 import { Request, Response } from 'express';
-import { AuthRequest } from '../middleware/auth';
-import { asyncHandler } from '../middleware/errorHandler';
+import { AuthRequest } from '../middleware/auth.js';
+import { asyncHandler } from '../middleware/errorHandler.js';
 
 const router = Router();
 
@@ -62,7 +62,7 @@ router.get('/', [
     }
   ];
 
-  res.json({
+  return res.json({
     products,
     pagination: {
       page: Number(page),
@@ -109,7 +109,7 @@ router.get('/:id', asyncHandler(async (req: AuthRequest, res: Response) => {
     updatedAt: new Date().toISOString()
   };
 
-  res.json({ product });
+  return res.json({ product });
 }));
 
 // Register new product
@@ -154,7 +154,7 @@ router.post('/', validateProductRegistration, asyncHandler(async (req: AuthReque
     createdAt: new Date().toISOString()
   };
 
-  res.status(201).json({
+  return res.status(201).json({
     message: 'Product registered successfully',
     product
   });
@@ -193,7 +193,7 @@ router.post('/:id/checkpoints', validateCheckpoint, asyncHandler(async (req: Aut
     stakeholder: userId
   };
 
-  res.status(201).json({
+  return res.status(201).json({
     message: 'Checkpoint added successfully',
     checkpoint
   });
@@ -222,7 +222,7 @@ router.post('/:id/stakeholders', [
   // 4. Update blockchain
   // 5. Send notification to new stakeholder
 
-  res.status(201).json({
+  return res.status(201).json({
     message: 'Stakeholder added successfully',
     stakeholder: {
       address: stakeholderAddress,
@@ -259,7 +259,7 @@ router.get('/:id/verify', asyncHandler(async (req: Request, res: Response) => {
     ]
   };
 
-  res.json({ verification });
+  return res.json({ verification });
 }));
 
 // Update product
@@ -284,7 +284,7 @@ router.put('/:id', [
   // 2. Update product in database
   // 3. Update blockchain if needed
 
-  res.json({
+  return res.json({
     message: 'Product updated successfully',
     product: {
       id,
