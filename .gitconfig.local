@@ -1,0 +1,87 @@
+# Git Configuration for TraceChain Web3-Dream Project
+# Add these to your global .gitconfig or use with: git config --file .gitconfig.local
+
+[alias]
+    # Branch Management
+    co = checkout
+    br = branch
+    ci = commit
+    st = status
+    unstage = reset HEAD --
+    last = log -1 HEAD
+    visual = !gitk
+    lg = log --oneline --graph --all --decorate
+    cleanup = "!git branch --merged | grep -v '\\*\\|main\\|develop' | xargs -n 1 git branch -d"
+    
+    # Feature Branch Helpers
+    feature = "!f() { git checkout develop && git pull origin develop && git checkout -b feature/$1; }; f"
+    bugfix = "!f() { git checkout develop && git pull origin develop && git checkout -b bugfix/$1; }; f"
+    hotfix = "!f() { git checkout main && git pull origin main && git checkout -b hotfix/$1; }; f"
+    release = "!f() { git checkout develop && git pull origin develop && git checkout -b release/$1; }; f"
+    
+    # Smart Contract Development
+    smart = "!f() { git checkout develop && git pull origin develop && git checkout -b smart-contracts/$1; }; f"
+    
+    # Infrastructure Development
+    infra = "!f() { git checkout develop && git pull origin develop && git checkout -b infrastructure/$1; }; f"
+    
+    # Experimental Development
+    exp = "!f() { git checkout develop && git pull origin develop && git checkout -b experimental/$1; }; f"
+    
+    # Branch Status
+    branches = branch -vv
+    merged = branch --merged
+    unmerged = branch --no-merged
+    
+    # Sync Helpers
+    sync-dev = "!git checkout develop && git pull origin develop"
+    sync-main = "!git checkout main && git pull origin main"
+    sync-feature = "!f() { git checkout $1 && git rebase develop; }; f"
+    
+    # PR Helpers
+    pr-ready = "!git rebase develop && git push --force-with-lease origin HEAD"
+    
+    # Cleanup Helpers
+    prune-local = "!git remote prune origin && git branch -vv | grep ': gone]' | awk '{print $1}' | xargs git branch -d"
+    prune-all = "!git remote prune origin && git branch -vv | grep ': gone]' | awk '{print $1}' | xargs git branch -D"
+
+[core]
+    # Use vim as default editor
+    editor = vim
+    
+    # Line ending configuration
+    autocrlf = input
+    
+    # Ignore case in file names
+    ignorecase = false
+
+[push]
+    # Always push current branch to its upstream
+    default = current
+    
+    # Push tags automatically
+    followTags = true
+
+[pull]
+    # Always rebase when pulling
+    rebase = true
+
+[rebase]
+    # Auto-stash before rebase
+    autoStash = true
+
+[status]
+    # Show untracked files
+    showUntrackedFiles = all
+
+[log]
+    # Pretty log format
+    decorate = true
+    
+[merge]
+    # Use fast-forward when possible
+    ff = true
+
+[init]
+    # Default branch name
+    defaultBranch = develop
