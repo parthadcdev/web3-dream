@@ -1,0 +1,54 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  # - "first_rules.yml"
+  # - "second_rules.yml"
+
+scrape_configs:
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # TraceChain Backend API
+  - job_name: 'tracechain-backend'
+    static_configs:
+      - targets: ['backend:3000']
+    metrics_path: '/metrics'
+    scrape_interval: 5s
+
+  # TraceChain Frontend (if metrics endpoint exists)
+  - job_name: 'tracechain-frontend'
+    static_configs:
+      - targets: ['frontend:3000']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+
+  # PostgreSQL Database
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+
+  # Redis Cache
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+
+  # Hardhat Node
+  - job_name: 'hardhat'
+    static_configs:
+      - targets: ['hardhat:8545']
+    scrape_interval: 30s
+
+  # MQTT Broker
+  - job_name: 'mosquitto'
+    static_configs:
+      - targets: ['mosquitto:1883']
+    scrape_interval: 30s
+
+  # Node Exporter (if added)
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']

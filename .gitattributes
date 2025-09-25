@@ -1,0 +1,81 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Smart contract files
+*.sol text
+*.js text
+*.json text
+
+# Configuration files
+*.yml text
+*.yaml text
+*.conf text
+*.config text
+
+# Documentation
+*.md text
+*.txt text
+
+# Docker files
+Dockerfile text
+docker-compose*.yml text
+
+# Git files
+.gitignore text
+.gitattributes text
+
+# Environment files (should not be committed)
+*.env binary
+.env* binary
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.tar.gz binary
+*.exe binary
+*.dll binary
+*.so binary
+*.dylib binary
+
+# Database files
+*.db binary
+*.sqlite binary
+*.sqlite3 binary
+
+# Log files
+*.log text
+
+# Lock files
+package-lock.json text
+yarn.lock text
+
+# TypeScript
+*.ts text
+*.tsx text
+
+# JavaScript
+*.js text
+*.jsx text
+
+# CSS
+*.css text
+*.scss text
+*.sass text
+
+# HTML
+*.html text
+
+# XML
+*.xml text
+
+# JSON
+*.json text
+
+# YAML
+*.yml text
+*.yaml text
