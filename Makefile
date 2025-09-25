@@ -1,6 +1,6 @@
 # TraceChain Development Makefile
 
-.PHONY: help install build start stop test clean deploy
+.PHONY: help install build start stop test clean deploy mcp-setup mcp-start mcp-stop mcp-status mcp-test mcp-demo mcp-analyze mcp-health quick-start
 
 # Default target
 help: ## Show this help message
@@ -14,6 +14,10 @@ install: ## Install all dependencies
 	cd smart-contracts && npm install
 	cd backend && npm install
 	cd frontend && npm install
+
+quick-start: ## One-command setup and start everything
+	@echo "🚀 Starting TraceChain Quick Setup..."
+	./quick-start.sh
 
 install-smart-contracts: ## Install smart contracts dependencies
 	cd smart-contracts && npm install
@@ -186,3 +190,36 @@ dev: ## Start development environment
 status: ## Show status of all services
 	@echo "Service Status:"
 	@docker-compose ps
+
+# MCP Commands
+mcp-setup: ## Setup MCP integration with Cursor IDE
+	@echo "🔧 Setting up MCP integration..."
+	./setup-mcp.sh
+
+mcp-start: ## Start MCP servers
+	@echo "🚀 Starting MCP servers..."
+	./run-mcp.sh start
+
+mcp-stop: ## Stop MCP servers
+	@echo "🛑 Stopping MCP servers..."
+	./run-mcp.sh stop
+
+mcp-status: ## Show MCP server status
+	@echo "📊 Checking MCP server status..."
+	./run-mcp.sh status
+
+mcp-test: ## Test MCP functionality
+	@echo "🧪 Testing MCP functionality..."
+	./run-mcp.sh test
+
+mcp-demo: ## Run MCP demonstration
+	@echo "🎯 Running MCP demonstration..."
+	./run-mcp.sh demo
+
+mcp-analyze: ## Run MCP analysis on project
+	@echo "🔍 Running MCP analysis..."
+	./run-mcp.sh analyze all
+
+mcp-health: ## Check project health via MCP
+	@echo "📊 Checking project health..."
+	./run-mcp.sh health
