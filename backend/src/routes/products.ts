@@ -3,6 +3,19 @@ import { body, validationResult, query } from 'express-validator';
 import { Request, Response } from 'express';
 import { AuthRequest } from '../middleware/auth.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
+import { 
+  requireResourcePermission, 
+  requireOwnership, 
+  auditLog,
+  UserRole,
+  Resource,
+  Permission
+} from '../middleware/authorization.js';
+import { 
+  validate, 
+  sanitize, 
+  validationGroups 
+} from '../middleware/validation.js';
 
 const router = Router();
 
@@ -26,12 +39,12 @@ const validateCheckpoint = [
 ];
 
 // Get all products for authenticated user
-router.get('/', [
-  query('page').optional().isInt({ min: 1 }),
-  query('limit').optional().isInt({ min: 1, max: 100 }),
-  query('type').optional().isIn(['PHARMACEUTICAL', 'LUXURY', 'ELECTRONICS', 'FOOD', 'OTHER']),
-  query('status').optional().isIn(['ACTIVE', 'INACTIVE', 'EXPIRED'])
-], asyncHandler(async (req: AuthRequest, res: Response) => {
+router.get('/', 
+  validate(validationGroups.product.query),
+  sanitize,
+  requireResourcePermission(Resource.PRODUCT, Permission.READ),
+  auditLog('product_list', Resource.PRODUCT),
+  asyncHandler(async (req: AuthRequest, res: Response) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({

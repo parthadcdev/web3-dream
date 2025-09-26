@@ -1,28 +1,23 @@
-"use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-const express_1 = require("express");
-const express_validator_1 = require("express-validator");
-const errorHandler_js_1 = require("../middleware/errorHandler.js");
-const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
-const router = (0, express_1.Router)();
+import { Router } from 'express';
+import { body, validationResult } from 'express-validator';
+import { asyncHandler } from '../middleware/errorHandler.js';
+import jwt from 'jsonwebtoken';
+const router = Router();
 // Validation middleware
 const validateUserRegistration = [
-    (0, express_validator_1.body)('email').isEmail().normalizeEmail(),
-    (0, express_validator_1.body)('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
-    (0, express_validator_1.body)('companyName').notEmpty().trim().escape(),
-    (0, express_validator_1.body)('companyType').isIn(['MANUFACTURER', 'DISTRIBUTOR', 'RETAILER', 'LOGISTICS']),
-    (0, express_validator_1.body)('walletAddress').optional().isEthereumAddress()
+    body('email').isEmail().normalizeEmail(),
+    body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
+    body('companyName').notEmpty().trim().escape(),
+    body('companyType').isIn(['MANUFACTURER', 'DISTRIBUTOR', 'RETAILER', 'LOGISTICS']),
+    body('walletAddress').optional().isEthereumAddress()
 ];
 const validateUserLogin = [
-    (0, express_validator_1.body)('email').isEmail().normalizeEmail(),
-    (0, express_validator_1.body)('password').notEmpty()
+    body('email').isEmail().normalizeEmail(),
+    body('password').notEmpty()
 ];
 // User registration
-router.post('/register', validateUserRegistration, (0, errorHandler_js_1.asyncHandler)(async (req, res) => {
-    const errors = (0, express_validator_1.validationResult)(req);
+router.post('/register', validateUserRegistration, asyncHandler(async (req, res) => {
+    const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({
             error: 'Validation failed',
@@ -47,8 +42,8 @@ router.post('/register', validateUserRegistration, (0, errorHandler_js_1.asyncHa
     });
 }));
 // User login
-router.post('/login', validateUserLogin, (0, errorHandler_js_1.asyncHandler)(async (req, res) => {
-    const errors = (0, express_validator_1.validationResult)(req);
+router.post('/login', validateUserLogin, asyncHandler(async (req, res) => {
+    const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({
             error: 'Validation failed',
@@ -63,7 +58,7 @@ router.post('/login', validateUserLogin, (0, errorHandler_js_1.asyncHandler)(asy
     // 4. Update last login timestamp
     // For demo purposes, generate a real JWT token
     const secret = process.env.JWT_SECRET || 'tracechain_jwt_secret_key_2025_development';
-    const token = jsonwebtoken_1.default.sign({
+    const token = jwt.sign({
         id: '1',
         email: email,
         role: 'MANUFACTURER'
@@ -79,11 +74,11 @@ router.post('/login', validateUserLogin, (0, errorHandler_js_1.asyncHandler)(asy
 }));
 // Web3 wallet authentication
 router.post('/wallet-auth', [
-    (0, express_validator_1.body)('walletAddress').isEthereumAddress(),
-    (0, express_validator_1.body)('signature').notEmpty(),
-    (0, express_validator_1.body)('message').notEmpty()
-], (0, errorHandler_js_1.asyncHandler)(async (req, res) => {
-    const errors = (0, express_validator_1.validationResult)(req);
+    body('walletAddress').isEthereumAddress(),
+    body('signature').notEmpty(),
+    body('message').notEmpty()
+], asyncHandler(async (req, res) => {
+    const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({
             error: 'Validation failed',
@@ -106,7 +101,7 @@ router.post('/wallet-auth', [
     });
 }));
 // Get user profile
-router.get('/profile', (0, errorHandler_js_1.asyncHandler)(async (req, res) => {
+router.get('/profile', asyncHandler(async (req, res) => {
     // TODO: Get user profile from database
     return res.json({
         user: {
@@ -122,10 +117,10 @@ router.get('/profile', (0, errorHandler_js_1.asyncHandler)(async (req, res) => {
 }));
 // Update user profile
 router.put('/profile', [
-    (0, express_validator_1.body)('companyName').optional().trim().escape(),
-    (0, express_validator_1.body)('walletAddress').optional().isEthereumAddress()
-], (0, errorHandler_js_1.asyncHandler)(async (req, res) => {
-    const errors = (0, express_validator_1.validationResult)(req);
+    body('companyName').optional().trim().escape(),
+    body('walletAddress').optional().isEthereumAddress()
+], asyncHandler(async (req, res) => {
+    const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({
             error: 'Validation failed',
@@ -139,5 +134,5 @@ router.put('/profile', [
         user: updates
     });
 }));
-exports.default = router;
+export default router;
 //# sourceMappingURL=users.js.map

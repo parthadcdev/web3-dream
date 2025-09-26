@@ -1,7 +1,4 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.asyncHandler = exports.createError = exports.errorHandler = void 0;
-const errorHandler = (error, req, res, next) => {
+export const errorHandler = (error, req, res, next) => {
     let { statusCode = 500, message } = error;
     // Log error for debugging
     console.error('Error:', {
@@ -44,18 +41,15 @@ const errorHandler = (error, req, res, next) => {
         }
     });
 };
-exports.errorHandler = errorHandler;
-const createError = (message, statusCode = 500) => {
+export const createError = (message, statusCode = 500) => {
     const error = new Error(message);
     error.statusCode = statusCode;
     error.isOperational = true;
     return error;
 };
-exports.createError = createError;
-const asyncHandler = (fn) => {
+export const asyncHandler = (fn) => {
     return (req, res, next) => {
         Promise.resolve(fn(req, res, next)).catch(next);
     };
 };
-exports.asyncHandler = asyncHandler;
 //# sourceMappingURL=errorHandler.js.map

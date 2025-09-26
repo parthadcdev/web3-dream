@@ -4,11 +4,38 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
+import session from 'express-session';
 import { errorHandler } from './middleware/errorHandler.js';
 import { authMiddleware } from './middleware/auth.js';
+import { 
+  securityHeaders, 
+  corsConfig, 
+  generalRateLimit, 
+  authRateLimit, 
+  apiRateLimit,
+  strictRateLimit,
+  sanitizeInput,
+  sqlInjectionProtection,
+  xssProtection,
+  requestSizeLimit,
+  securityLogger,
+  securityResponseHeaders,
+  requestTimeout
+} from './middleware/security.js';
+import { 
+  requireResourcePermission, 
+  requireRole, 
+  auditLog,
+  UserRole,
+  Resource,
+  Permission
+} from './middleware/authorization.js';
 import productRoutes from './routes/products.js';
 import userRoutes from './routes/users.js';
 import healthRoutes from './routes/health.js';
+import nftRoutes from './routes/nft.js';
+import securityRoutes from './routes/security.js';
+import { securityMonitoring } from './middleware/security-monitoring.js';
 
 // Load environment variables
 dotenv.config();
@@ -16,66 +43,43 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Security middleware
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      imgSrc: ["'self'", "data:", "https:"],
-      scriptSrc: ["'self'"],
-      connectSrc: ["'self'", "https://api.polygonscan.com"],
-      frameSrc: ["'none'"],
-      objectSrc: ["'none'"],
-      mediaSrc: ["'self'"],
-      manifestSrc: ["'self'"]
-    }
-  },
-  hsts: {
-    maxAge: 31536000,
-    includeSubDomains: true,
-    preload: true
+// Trust proxy for accurate IP addresses
+app.set('trust proxy', 1);
+
+// Security middleware stack
+app.use(securityHeaders);
+app.use(corsConfig);
+app.use(securityLogger);
+app.use(securityResponseHeaders);
+app.use(requestTimeout(30000)); // 30 second timeout
+app.use(requestSizeLimit('10mb'));
+
+// Session configuration
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'tracechain-session-secret',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    sameSite: 'strict'
   }
 }));
 
-// CORS configuration
-app.use(cors({
-  origin: (origin, callback) => {
-    const allowedOrigins = [
-      'http://localhost:3000',
-      'http://localhost:3001',
-      'https://app.tracechain.com',
-      'https://verify.tracechain.com'
-    ];
-    
-    // Allow requests with no origin (mobile apps, etc.)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
-}));
+// Input sanitization and protection
+app.use(sanitizeInput);
+app.use(sqlInjectionProtection);
+app.use(xssProtection);
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
-  message: {
-    error: 'Too many requests from this IP, please try again later.',
-    retryAfter: Math.ceil(15 * 60 * 1000 / 1000)
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+// Security monitoring
+app.use(securityMonitoring);
 
-app.use(limiter);
+// Rate limiting (applied in order of specificity)
+app.use('/api/auth', authRateLimit);
+app.use('/api/nft/mint', strictRateLimit);
+app.use('/api', apiRateLimit);
+app.use(generalRateLimit);
 
 // Logging
 app.use(morgan('combined'));
@@ -87,9 +91,27 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Health check route (no auth required)
 app.use('/api/health', healthRoutes);
 
-// API routes
+// API routes with proper authentication and authorization
 app.use('/api/users', userRoutes);
-app.use('/api/products', authMiddleware, productRoutes);
+app.use('/api/products', 
+  authMiddleware, 
+  requireResourcePermission(Resource.PRODUCT, Permission.READ),
+  auditLog('product_access', Resource.PRODUCT),
+  productRoutes
+);
+app.use('/api/nft', 
+  authMiddleware, 
+  requireResourcePermission(Resource.NFT, Permission.READ),
+  auditLog('nft_access', Resource.NFT),
+  nftRoutes
+);
+
+// Security routes (admin only)
+app.use('/api/security', 
+  authMiddleware, 
+  requireRole([UserRole.ADMIN, UserRole.MODERATOR]),
+  securityRoutes
+);
 
 // Root route
 app.get('/', (req, res) => {
