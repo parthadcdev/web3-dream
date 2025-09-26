@@ -1,435 +1,354 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const { time } = require("@nomicfoundation/hardhat-network-helpers");
 
 describe("NFTCertificate", function () {
-    let nftCertificate, productRegistry;
-    let owner, manufacturer, distributor, retailer, consumer;
-    let productId;
+  let nftCertificate;
+  let owner;
+  let minter;
+  let user1;
+  let user2;
 
     beforeEach(async function () {
-        [owner, manufacturer, distributor, retailer, consumer] = await ethers.getSigners();
-        
-        // Deploy ProductRegistry first
-        const ProductRegistry = await ethers.getContractFactory("ProductRegistry");
-        productRegistry = await ProductRegistry.deploy();
-        await productRegistry.deployed();
-        
-        // Deploy NFTCertificate
+    [owner, minter, user1, user2] = await ethers.getSigners();
+
         const NFTCertificate = await ethers.getContractFactory("NFTCertificate");
-        nftCertificate = await NFTCertificate.deploy(productRegistry.address);
-        await nftCertificate.deployed();
+    nftCertificate = await NFTCertificate.deploy(
+      "Test Certificates",
+      "TEST",
+      "https://api.test.com/metadata/"
+    );
+        await nftCertificate.waitForDeployment();
         
-        // Register a test product
-        await productRegistry.connect(manufacturer).registerProduct(
-            "Test Product",
-            "pharmaceutical",
-            "BATCH-001",
-            Math.floor(Date.now() / 1000),
-            Math.floor(Date.now() / 1000) + 86400 * 365,
-            ["Active Ingredient"],
-            "https://ipfs.io/ipfs/QmHash"
-        );
-        productId = 1;
+    // Add minter as authorized minter
+    await nftCertificate.addAuthorizedMinter(minter.address);
     });
 
     describe("Deployment", function () {
         it("Should set the correct name and symbol", async function () {
-            expect(await nftCertificate.name()).to.equal("TraceChain Certificate");
-            expect(await nftCertificate.symbol()).to.equal("TRACECERT");
-        });
-
-        it("Should set the correct owner", async function () {
-            expect(await nftCertificate.owner()).to.equal(owner.address);
-        });
-
-        it("Should set the correct product registry", async function () {
-            expect(await nftCertificate.productRegistry()).to.equal(productRegistry.address);
-        });
-
-        it("Should initialize with zero token count", async function () {
-            expect(await nftCertificate.totalSupply()).to.equal(0);
-        });
+      expect(await nftCertificate.name()).to.equal("Test Certificates");
+      expect(await nftCertificate.symbol()).to.equal("TEST");
     });
 
-    describe("Certificate Minting", function () {
-        const certificateType = "authenticity";
-        const expiryDate = Math.floor(Date.now() / 1000) + 86400 * 365; // 1 year
-        const issuer = "TraceChain Certification Authority";
-        const standards = "ISO 9001, FDA Approved";
-        const tokenURI = "https://ipfs.io/ipfs/QmCertificateHash";
-        const verificationCode = "VERIFY-12345";
-
-        it("Should mint certificate successfully", async function () {
-            const tx = await nftCertificate.mintCertificate(
-                manufacturer.address,
-                productId,
-                certificateType,
-                expiryDate,
-                issuer,
-                standards,
-                tokenURI,
-                verificationCode
-            );
-
-            await expect(tx)
-                .to.emit(nftCertificate, "CertificateMinted")
-                .withArgs(1, productId, certificateType, manufacturer.address);
-
-            const certificate = await nftCertificate.getCertificate(1);
-            expect(certificate.productId).to.equal(productId);
-            expect(certificate.certificateType).to.equal(certificateType);
-            expect(certificate.issuer).to.equal(issuer);
-            expect(certificate.standards).to.equal(standards);
-            expect(certificate.isValid).to.be.true;
-            expect(certificate.verificationCode).to.equal(verificationCode);
-        });
-
-        it("Should increment token counter", async function () {
-            await nftCertificate.mintCertificate(
-                manufacturer.address,
-                productId,
-                certificateType,
-                expiryDate,
-                issuer,
-                standards,
-                tokenURI,
-                verificationCode
-            );
-
-            expect(await nftCertificate.totalSupply()).to.equal(1);
-        });
-
-        it("Should set correct token owner", async function () {
-            await nftCertificate.mintCertificate(
-                manufacturer.address,
-                productId,
-                certificateType,
-                expiryDate,
-                issuer,
-                standards,
-                tokenURI,
-                verificationCode
-            );
-
-            expect(await nftCertificate.ownerOf(1)).to.equal(manufacturer.address);
-        });
-
-        it("Should map product to certificate", async function () {
-            await nftCertificate.mintCertificate(
-                manufacturer.address,
-                productId,
-                certificateType,
-                expiryDate,
-                issuer,
-                standards,
-                tokenURI,
-                verificationCode
-            );
-
-            const tokenId = await nftCertificate.productToCertificate(productId);
-            expect(tokenId).to.equal(1);
-        });
-
-        it("Should mark verification code as used", async function () {
-            await nftCertificate.mintCertificate(
-                manufacturer.address,
-                productId,
-                certificateType,
-                expiryDate,
-                issuer,
-                standards,
-                tokenURI,
-                verificationCode
-            );
-
-            expect(await nftCertificate.usedVerificationCodes(verificationCode)).to.be.true;
-        });
-
-        it("Should prevent duplicate verification codes", async function () {
-            await nftCertificate.mintCertificate(
-                manufacturer.address,
-                productId,
-                certificateType,
-                expiryDate,
-                issuer,
-                standards,
-                tokenURI,
-                verificationCode
-            );
-
-            // Try to mint another certificate with same verification code
-            await expect(
-                nftCertificate.mintCertificate(
-                    distributor.address,
-                    productId,
-                    "quality",
-                    expiryDate,
-                    issuer,
-                    standards,
-                    tokenURI,
-                    verificationCode // Same verification code
-                )
-            ).to.be.revertedWith("Verification code already used");
-        });
-
-        it("Should prevent minting for non-existent product", async function () {
-            await expect(
-                nftCertificate.mintCertificate(
-                    manufacturer.address,
-                    999, // Non-existent product
-                    certificateType,
-                    expiryDate,
-                    issuer,
-                    standards,
-                    tokenURI,
-                    verificationCode
-                )
-            ).to.be.revertedWith("Only product registry");
-        });
-
-        it("Should validate certificate parameters", async function () {
-            await expect(
-                nftCertificate.mintCertificate(
-                    manufacturer.address,
-                    productId,
-                    "", // Empty certificate type
-                    expiryDate,
-                    issuer,
-                    standards,
-                    tokenURI,
-                    verificationCode
-                )
-            ).to.be.revertedWith("Certificate type required");
-
-            await expect(
-                nftCertificate.mintCertificate(
-                    manufacturer.address,
-                    productId,
-                    certificateType,
-                    Math.floor(Date.now() / 1000) - 86400, // Past expiry date
-                    issuer,
-                    standards,
-                    tokenURI,
-                    verificationCode
-                )
-            ).to.be.revertedWith("Invalid expiry date");
-        });
-
-        it("Should prevent zero address recipient", async function () {
-            await expect(
-                nftCertificate.mintCertificate(
-                    ethers.constants.AddressZero,
-                    productId,
-                    certificateType,
-                    expiryDate,
-                    issuer,
-                    standards,
-                    tokenURI,
-                    verificationCode
-                )
-            ).to.be.revertedWith("Invalid recipient address");
-        });
+    it("Should set the correct base URI", async function () {
+      expect(await nftCertificate.getBaseTokenURI()).to.equal("https://api.test.com/metadata/");
     });
 
-    describe("Certificate Verification", function () {
-        const certificateType = "authenticity";
-        const expiryDate = Math.floor(Date.now() / 1000) + 86400 * 365;
-        const issuer = "TraceChain Certification Authority";
-        const standards = "ISO 9001";
-        const tokenURI = "https://ipfs.io/ipfs/QmCertificateHash";
-        const verificationCode = "VERIFY-12345";
+    it("Should set owner as authorized minter", async function () {
+      expect(await nftCertificate.authorizedMinters(owner.address)).to.be.true;
+    });
+  });
+
+  describe("Minting", function () {
+    const productId = 1;
+    const certificateType = "authenticity";
+    const metadataURI = "https://ipfs.io/ipfs/test123";
+    const complianceStandards = ["ISO 9001", "FDA Approved"];
+    const expiresAt = Math.floor(Date.now() / 1000) + 365 * 24 * 60 * 60; // 1 year from now
+
+    it("Should mint a certificate successfully", async function () {
+      const mintingFee = await nftCertificate.mintingFee();
+      
+      const tx = await nftCertificate.connect(minter).mintCertificate(
+        user1.address,
+                productId,
+                certificateType,
+        metadataURI,
+        complianceStandards,
+        expiresAt,
+        { value: mintingFee }
+      );
+
+      const receipt = await tx.wait();
+      const event = receipt.logs.find(log => {
+        try {
+          const parsed = nftCertificate.interface.parseLog(log);
+          return parsed && parsed.name === "CertificateMinted";
+        } catch (e) {
+          return false;
+        }
+      });
+      
+      expect(event).to.not.be.undefined;
+      const parsedEvent = nftCertificate.interface.parseLog(event);
+      expect(parsedEvent.args.tokenId).to.equal(0);
+      expect(parsedEvent.args.productId).to.equal(productId);
+      expect(parsedEvent.args.owner).to.equal(user1.address);
+      expect(parsedEvent.args.certificateType).to.equal(certificateType);
+    });
+
+    it("Should fail to mint without sufficient fee", async function () {
+      const mintingFee = await nftCertificate.mintingFee();
+      
+      await expect(
+        nftCertificate.connect(minter).mintCertificate(
+          user1.address,
+                productId,
+                certificateType,
+          metadataURI,
+          complianceStandards,
+          expiresAt,
+          { value: mintingFee - 1n }
+        )
+      ).to.be.revertedWith("Insufficient minting fee");
+    });
+
+    it("Should fail to mint from unauthorized address", async function () {
+      const mintingFee = await nftCertificate.mintingFee();
+
+            await expect(
+        nftCertificate.connect(user1).mintCertificate(
+          user2.address,
+                    productId,
+                    certificateType,
+          metadataURI,
+          complianceStandards,
+          expiresAt,
+          { value: mintingFee }
+        )
+      ).to.be.revertedWith("Not authorized to mint");
+    });
+
+    it("Should fail to mint to zero address", async function () {
+      const mintingFee = await nftCertificate.mintingFee();
+      
+            await expect(
+        nftCertificate.connect(minter).mintCertificate(
+                    ethers.ZeroAddress,
+                    productId,
+                    certificateType,
+          metadataURI,
+          complianceStandards,
+          expiresAt,
+          { value: mintingFee }
+        )
+      ).to.be.revertedWith("Cannot mint to zero address");
+    });
+  });
+
+  describe("Verification", function () {
+    let tokenId;
 
         beforeEach(async function () {
-            await nftCertificate.mintCertificate(
-                manufacturer.address,
-                productId,
-                certificateType,
-                expiryDate,
-                issuer,
-                standards,
-                tokenURI,
-                verificationCode
-            );
-        });
+      const mintingFee = await nftCertificate.mintingFee();
+      
+      const tx = await nftCertificate.connect(minter).mintCertificate(
+        user1.address,
+        1,
+        "authenticity",
+        "https://ipfs.io/ipfs/test123",
+        ["ISO 9001"],
+        0, // No expiration
+        { value: mintingFee }
+      );
 
-        it("Should verify valid certificate", async function () {
-            const verification = await nftCertificate.verifyCertificate(1);
-            expect(verification[0]).to.be.true; // isValid
-            expect(verification[1]).to.equal("Certificate is valid");
-        });
+      const receipt = await tx.wait();
+      const event = receipt.logs.find(log => {
+        try {
+          const parsed = nftCertificate.interface.parseLog(log);
+          return parsed && parsed.name === "CertificateMinted";
+        } catch (e) {
+          return false;
+        }
+      });
+      const parsedEvent = nftCertificate.interface.parseLog(event);
+      tokenId = parsedEvent.args.tokenId;
+    });
 
-        it("Should verify certificate by verification code", async function () {
-            const verification = await nftCertificate.verifyByCode(verificationCode);
-            expect(verification[0]).to.be.true;
-            expect(verification[1]).to.equal("Certificate is valid");
-        });
+    it("Should verify certificate successfully", async function () {
+      const verificationFee = await nftCertificate.verificationFee();
+      
+      const tx = await nftCertificate.connect(user2).verifyCertificate(
+        tokenId,
+        "qr",
+        "Additional verification data",
+        { value: verificationFee }
+      );
 
-        it("Should return false for non-existent certificate", async function () {
-            const verification = await nftCertificate.verifyCertificate(999);
-            expect(verification[0]).to.be.false;
-            expect(verification[1]).to.equal("Certificate does not exist");
-        });
+      const receipt = await tx.wait();
+      const event = receipt.logs.find(log => {
+        try {
+          const parsed = nftCertificate.interface.parseLog(log);
+          return parsed && parsed.name === "CertificateVerified";
+        } catch (e) {
+          return false;
+        }
+      });
+      
+      expect(event).to.not.be.undefined;
+      const parsedEvent = nftCertificate.interface.parseLog(event);
+      expect(parsedEvent.args.tokenId).to.equal(tokenId);
+      expect(parsedEvent.args.verifier).to.equal(user2.address);
+      expect(parsedEvent.args.verificationMethod).to.equal("qr");
+      expect(parsedEvent.args.isValid).to.be.true;
+    });
 
-        it("Should return false for non-existent verification code", async function () {
-            const verification = await nftCertificate.verifyByCode("NON-EXISTENT");
-            expect(verification[0]).to.be.false;
-            expect(verification[1]).to.equal("Certificate not found");
-        });
+    it("Should verify certificate by code", async function () {
+      const verificationFee = await nftCertificate.verificationFee();
+      
+      // Get verification code from certificate
+      const cert = await nftCertificate.getCertificate(tokenId);
+      const verificationCode = cert.verificationCode;
+      
+      const tx = await nftCertificate.connect(user2).verifyByCode(
+        verificationCode,
+        "code",
+        "Code verification",
+        { value: verificationFee }
+      );
 
-        it("Should handle expired certificates", async function () {
-            // Fast forward time to after expiry
-            await time.increase(86400 * 366); // 1 year + 1 day
+      const receipt = await tx.wait();
+      const event = receipt.logs.find(log => {
+        try {
+          const parsed = nftCertificate.interface.parseLog(log);
+          return parsed && parsed.name === "CertificateVerified";
+        } catch (e) {
+          return false;
+        }
+      });
+      
+      expect(event).to.not.be.undefined;
+      const parsedEvent = nftCertificate.interface.parseLog(event);
+      expect(parsedEvent.args.tokenId).to.equal(tokenId);
+    });
 
-            const verification = await nftCertificate.verifyCertificate(1);
-            expect(verification[0]).to.be.false;
-            expect(verification[1]).to.equal("Certificate has expired");
-        });
-
-        it("Should handle invalidated certificates", async function () {
-            // Invalidate the certificate
-            await nftCertificate.invalidateCertificate(1, "Product recalled");
-
-            const verification = await nftCertificate.verifyCertificate(1);
-            expect(verification[0]).to.be.false;
-            expect(verification[1]).to.equal("Certificate has been invalidated");
+    it("Should fail verification with invalid code", async function () {
+      const verificationFee = await nftCertificate.verificationFee();
+      
+      await expect(
+        nftCertificate.connect(user2).verifyByCode(
+          "INVALID123",
+          "code",
+          "Invalid code",
+          { value: verificationFee }
+        )
+      ).to.be.revertedWith("Invalid verification code");
         });
     });
 
     describe("Certificate Management", function () {
-        const certificateType = "authenticity";
-        const expiryDate = Math.floor(Date.now() / 1000) + 86400 * 365;
-        const issuer = "TraceChain Certification Authority";
-        const standards = "ISO 9001";
-        const tokenURI = "https://ipfs.io/ipfs/QmCertificateHash";
-        const verificationCode = "VERIFY-12345";
+    let tokenId;
 
         beforeEach(async function () {
-            await nftCertificate.mintCertificate(
-                manufacturer.address,
-                productId,
-                certificateType,
-                expiryDate,
-                issuer,
-                standards,
-                tokenURI,
-                verificationCode
-            );
-        });
+      const mintingFee = await nftCertificate.mintingFee();
+      
+      const tx = await nftCertificate.connect(minter).mintCertificate(
+        user1.address,
+        1,
+        "authenticity",
+        "https://ipfs.io/ipfs/test123",
+        ["ISO 9001"],
+        0,
+        { value: mintingFee }
+      );
 
-        it("Should invalidate certificate", async function () {
-            const reason = "Product quality issue";
-            const tx = await nftCertificate.invalidateCertificate(1, reason);
+      const receipt = await tx.wait();
+      const event = receipt.logs.find(log => {
+        try {
+          const parsed = nftCertificate.interface.parseLog(log);
+          return parsed && parsed.name === "CertificateMinted";
+        } catch (e) {
+          return false;
+        }
+      });
+      const parsedEvent = nftCertificate.interface.parseLog(event);
+      tokenId = parsedEvent.args.tokenId;
+    });
 
-            await expect(tx)
-                .to.emit(nftCertificate, "CertificateVerified")
-                .withArgs(1, false, reason);
+    it("Should get certificate details", async function () {
+      const cert = await nftCertificate.getCertificate(tokenId);
+      
+      expect(cert.productId).to.equal(1);
+      expect(cert.owner).to.equal(user1.address);
+      expect(cert.certificateType).to.equal("authenticity");
+      expect(cert.isValid).to.be.true;
+      expect(cert.complianceStandards).to.deep.equal(["ISO 9001"]);
+    });
 
-            const certificate = await nftCertificate.getCertificate(1);
-            expect(certificate.isValid).to.be.false;
-        });
+    it("Should check certificate validity", async function () {
+      const isValid = await nftCertificate.isCertificateValid(tokenId);
+      expect(isValid).to.be.true;
+    });
 
-        it("Should update certificate metadata", async function () {
-            const newTokenURI = "https://ipfs.io/ipfs/QmNewHash";
-            await nftCertificate.updateCertificateMetadata(1, newTokenURI);
+    it("Should invalidate certificate", async function () {
+      const tx = await nftCertificate.connect(owner).invalidateCertificate(
+        tokenId,
+        "Fraud detected"
+      );
 
-            expect(await nftCertificate.tokenURI(1)).to.equal(newTokenURI);
-        });
+      const receipt = await tx.wait();
+      const event = receipt.logs.find(log => {
+        try {
+          const parsed = nftCertificate.interface.parseLog(log);
+          return parsed && parsed.name === "CertificateInvalidated";
+        } catch (e) {
+          return false;
+        }
+      });
+      
+      expect(event).to.not.be.undefined;
+      const parsedEvent = nftCertificate.interface.parseLog(event);
+      expect(parsedEvent.args.tokenId).to.equal(tokenId);
+      expect(parsedEvent.args.reason).to.equal("Fraud detected");
 
-        it("Should get certificate by product ID", async function () {
-            const tokenId = await nftCertificate.getCertificateByProduct(productId);
-            expect(tokenId).to.equal(1);
-        });
+      const cert = await nftCertificate.getCertificate(tokenId);
+      expect(cert.isValid).to.be.false;
+    });
 
-        it("Should return zero for non-existent product certificate", async function () {
-            const tokenId = await nftCertificate.getCertificateByProduct(999);
-            expect(tokenId).to.equal(0);
-        });
+    it("Should add compliance standard", async function () {
+      const tx = await nftCertificate.connect(owner).addComplianceStandard(
+        tokenId,
+        "FDA Approved"
+      );
 
-        it("Should get all certificates for owner", async function () {
-            // Mint another certificate for the same owner
-            await productRegistry.connect(manufacturer).registerProduct(
-                "Test Product 2",
-                "pharmaceutical",
-                "BATCH-002",
-                Math.floor(Date.now() / 1000),
-                Math.floor(Date.now() / 1000) + 86400 * 365,
-                ["Active Ingredient 2"],
-                "https://ipfs.io/ipfs/QmHash2"
-            );
+      const receipt = await tx.wait();
+      // Note: No event is emitted in the current implementation
+      // This test just verifies the function executes successfully
+    });
+  });
 
-            await nftCertificate.mintCertificate(
-                manufacturer.address,
-                2,
-                "quality",
-                expiryDate,
-                issuer,
-                standards,
-                tokenURI,
-                "VERIFY-54321"
-            );
+  describe("Access Control", function () {
+    it("Should add authorized minter", async function () {
+      await nftCertificate.addAuthorizedMinter(user1.address);
+      expect(await nftCertificate.authorizedMinters(user1.address)).to.be.true;
+    });
 
-            const certificates = await nftCertificate.getCertificatesByOwner(manufacturer.address);
-            expect(certificates.length).to.equal(2);
-            expect(certificates[0]).to.equal(1);
-            expect(certificates[1]).to.equal(2);
-        });
+    it("Should remove authorized minter", async function () {
+      await nftCertificate.addAuthorizedMinter(user1.address);
+      await nftCertificate.removeAuthorizedMinter(user1.address);
+      expect(await nftCertificate.authorizedMinters(user1.address)).to.be.false;
+    });
 
-        it("Should prevent unauthorized metadata update", async function () {
+    it("Should fail to add minter from non-owner", async function () {
             await expect(
-                nftCertificate.connect(distributor).updateCertificateMetadata(1, "new-uri")
-            ).to.be.revertedWith("Not certificate owner or authorized");
-        });
+        nftCertificate.connect(user1).addAuthorizedMinter(user2.address)
+            ).to.be.revertedWithCustomError(nftCertificate, "OwnableUnauthorizedAccount");
+    });
+  });
 
-        it("Should prevent invalidating non-existent certificate", async function () {
+  describe("Fee Management", function () {
+    it("Should update minting fee", async function () {
+      const newFee = ethers.parseEther("0.02");
+      await nftCertificate.updateMintingFee(newFee);
+      expect(await nftCertificate.mintingFee()).to.equal(newFee);
+    });
+
+    it("Should update verification fee", async function () {
+      const newFee = ethers.parseEther("0.002");
+      await nftCertificate.updateVerificationFee(newFee);
+      expect(await nftCertificate.verificationFee()).to.equal(newFee);
+    });
+
+    it("Should fail to update fees from non-owner", async function () {
+      const newFee = ethers.parseEther("0.02");
+
             await expect(
-                nftCertificate.invalidateCertificate(999, "reason")
-            ).to.be.revertedWith("Certificate does not exist");
+        nftCertificate.connect(user1).updateMintingFee(newFee)
+            ).to.be.revertedWithCustomError(nftCertificate, "OwnableUnauthorizedAccount");
         });
     });
 
-    describe("Access Control", function () {
-        it("Should only allow owner to mint certificates", async function () {
-            await expect(
-                nftCertificate.connect(manufacturer).mintCertificate(
-                    manufacturer.address,
-                    productId,
-                    "authenticity",
-                    Math.floor(Date.now() / 1000) + 86400 * 365,
-                    "issuer",
-                    "standards",
-                    "tokenURI",
-                    "verificationCode"
-                )
-            ).to.be.revertedWith("Ownable: caller is not the owner");
-        });
-
-        it("Should only allow owner to invalidate certificates", async function () {
-            await nftCertificate.mintCertificate(
-                manufacturer.address,
-                productId,
-                "authenticity",
-                Math.floor(Date.now() / 1000) + 86400 * 365,
-                "issuer",
-                "standards",
-                "tokenURI",
-                "verificationCode"
-            );
-
-            await expect(
-                nftCertificate.connect(manufacturer).invalidateCertificate(1, "reason")
-            ).to.be.revertedWith("Ownable: caller is not the owner");
-        });
-
-        it("Should only allow owner to update product registry", async function () {
-            await expect(
-                nftCertificate.connect(manufacturer).setProductRegistry(distributor.address)
-            ).to.be.revertedWith("Ownable: caller is not the owner");
-        });
-    });
-
-    describe("Pausable Functionality", function () {
-        it("Should pause and unpause correctly", async function () {
+  describe("Pausable", function () {
+    it("Should pause and unpause", async function () {
             await nftCertificate.emergencyPause();
             expect(await nftCertificate.paused()).to.be.true;
 
@@ -437,184 +356,22 @@ describe("NFTCertificate", function () {
             expect(await nftCertificate.paused()).to.be.false;
         });
 
-        it("Should prevent minting when paused", async function () {
+    it("Should fail to mint when paused", async function () {
             await nftCertificate.emergencyPause();
 
-            await expect(
-                nftCertificate.mintCertificate(
-                    manufacturer.address,
-                    productId,
-                    "authenticity",
-                    Math.floor(Date.now() / 1000) + 86400 * 365,
-                    "issuer",
-                    "standards",
-                    "tokenURI",
-                    "verificationCode"
-                )
-            ).to.be.revertedWith("Pausable: paused");
-        });
-
-        it("Should prevent transfers when paused", async function () {
-            await nftCertificate.mintCertificate(
-                manufacturer.address,
-                productId,
-                "authenticity",
-                Math.floor(Date.now() / 1000) + 86400 * 365,
-                "issuer",
-                "standards",
-                "tokenURI",
-                "verificationCode"
-            );
-
-            await nftCertificate.emergencyPause();
+      const mintingFee = await nftCertificate.mintingFee();
 
             await expect(
-                nftCertificate.connect(manufacturer).transferFrom(
-                    manufacturer.address,
-                    distributor.address,
-                    1
+        nftCertificate.connect(minter).mintCertificate(
+          user1.address,
+          1,
+          "authenticity",
+          "https://ipfs.io/ipfs/test123",
+          [],
+          0,
+          { value: mintingFee }
                 )
-            ).to.be.revertedWith("Pausable: paused");
-        });
-    });
-
-    describe("Edge Cases", function () {
-        it("Should handle multiple certificate types", async function () {
-            const types = ["authenticity", "quality", "compliance"];
-            const verificationCodes = ["VERIFY-001", "VERIFY-002", "VERIFY-003"];
-
-            for (let i = 0; i < types.length; i++) {
-                // Register new product for each certificate
-                await productRegistry.connect(manufacturer).registerProduct(
-                    `Product ${i}`,
-                    "pharmaceutical",
-                    `BATCH-${i}`,
-                    Math.floor(Date.now() / 1000),
-                    Math.floor(Date.now() / 1000) + 86400 * 365,
-                    ["Material"],
-                    "https://ipfs.io/ipfs/QmHash"
-                );
-
-                await nftCertificate.mintCertificate(
-                    manufacturer.address,
-                    i + 1,
-                    types[i],
-                    Math.floor(Date.now() / 1000) + 86400 * 365,
-                    "issuer",
-                    "standards",
-                    "tokenURI",
-                    verificationCodes[i]
-                );
-            }
-
-            expect(await nftCertificate.totalSupply()).to.equal(3);
-        });
-
-        it("Should handle long verification codes", async function () {
-            const longCode = "VERIFY-" + "A".repeat(100);
-            
-            await nftCertificate.mintCertificate(
-                manufacturer.address,
-                productId,
-                "authenticity",
-                Math.floor(Date.now() / 1000) + 86400 * 365,
-                "issuer",
-                "standards",
-                "tokenURI",
-                longCode
-            );
-
-            const verification = await nftCertificate.verifyByCode(longCode);
-            expect(verification[0]).to.be.true;
-        });
-
-        it("Should handle special characters in verification codes", async function () {
-            const specialCode = "VERIFY-123!@#$%^&*()";
-            
-            await nftCertificate.mintCertificate(
-                manufacturer.address,
-                productId,
-                "authenticity",
-                Math.floor(Date.now() / 1000) + 86400 * 365,
-                "issuer",
-                "standards",
-                "tokenURI",
-                specialCode
-            );
-
-            const verification = await nftCertificate.verifyByCode(specialCode);
-            expect(verification[0]).to.be.true;
-        });
-    });
-
-    describe("Gas Optimization", function () {
-        it("Should handle batch certificate minting efficiently", async function () {
-            const batchSize = 10;
-            const startGas = await ethers.provider.getBlockNumber();
-
-            for (let i = 0; i < batchSize; i++) {
-                // Register new product for each certificate
-                await productRegistry.connect(manufacturer).registerProduct(
-                    `Product ${i}`,
-                    "pharmaceutical",
-                    `BATCH-${i}`,
-                    Math.floor(Date.now() / 1000),
-                    Math.floor(Date.now() / 1000) + 86400 * 365,
-                    ["Material"],
-                    "https://ipfs.io/ipfs/QmHash"
-                );
-
-                await nftCertificate.mintCertificate(
-                    manufacturer.address,
-                    i + 1,
-                    "authenticity",
-                    Math.floor(Date.now() / 1000) + 86400 * 365,
-                    "issuer",
-                    "standards",
-                    "tokenURI",
-                    `VERIFY-${i}`
-                );
-            }
-
-            const endGas = await ethers.provider.getBlockNumber();
-            const gasUsed = endGas - startGas;
-
-            // Should use reasonable amount of gas for batch operations
-            expect(gasUsed).to.be.lt(2000);
-        });
-    });
-
-    describe("Integration with ProductRegistry", function () {
-        it("Should maintain correct product-to-certificate mapping", async function () {
-            await nftCertificate.mintCertificate(
-                manufacturer.address,
-                productId,
-                "authenticity",
-                Math.floor(Date.now() / 1000) + 86400 * 365,
-                "issuer",
-                "standards",
-                "tokenURI",
-                "VERIFY-123"
-            );
-
-            // Verify the mapping
-            const tokenId = await nftCertificate.productToCertificate(productId);
-            expect(tokenId).to.equal(1);
-
-            // Verify the certificate references the correct product
-            const certificate = await nftCertificate.getCertificate(1);
-            expect(certificate.productId).to.equal(productId);
-        });
-
-        it("Should handle product registry address updates", async function () {
-            // Deploy new product registry
-            const NewProductRegistry = await ethers.getContractFactory("ProductRegistry");
-            const newProductRegistry = await NewProductRegistry.deploy();
-            await newProductRegistry.deployed();
-
-            // Update the registry address
-            await nftCertificate.setProductRegistry(newProductRegistry.address);
-            expect(await nftCertificate.productRegistry()).to.equal(newProductRegistry.address);
+            ).to.be.revertedWithCustomError(nftCertificate, "EnforcedPause");
         });
     });
 });

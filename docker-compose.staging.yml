@@ -1,0 +1,91 @@
+version: '3.8'
+
+# Staging environment overrides for docker-compose.yml
+# Use: podman-compose -f docker-compose.yml -f docker-compose.staging.yml up -d
+
+services:
+  # Backend API - Staging configuration
+  backend:
+    environment:
+      NODE_ENV: staging
+      LOG_LEVEL: info
+      DATABASE_URL: postgresql://tracechain_user:tracechain_password@postgres:5432/tracechain_db
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: tracechain-jwt-secret-staging
+      JWT_EXPIRES_IN: 24h
+      POLYGON_RPC_URL: https://rpc-mumbai.maticvigil.com
+      MUMBAI_RPC_URL: https://rpc-mumbai.maticvigil.com
+    command: npm start
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+
+  # Frontend - Staging configuration
+  frontend:
+    environment:
+      REACT_APP_ENV: staging
+      REACT_APP_API_URL: http://localhost:3000
+      REACT_APP_BLOCKCHAIN_NETWORK: mumbai
+      REACT_APP_PRODUCT_REGISTRY_ADDRESS: 0x1234567890123456789012345678901234567890
+      REACT_APP_NFT_CERTIFICATE_ADDRESS: 0x1234567890123456789012345678901234567890
+      NODE_OPTIONS: "--max-old-space-size=2048"
+    command: npm start
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+
+  # PostgreSQL - Staging configuration
+  postgres:
+    environment:
+      POSTGRES_DB: tracechain_db_staging
+      POSTGRES_USER: tracechain_user
+      POSTGRES_PASSWORD: tracechain_password_staging
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+
+  # Redis - Staging configuration
+  redis:
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
+
+  # Hardhat - Staging configuration
+  hardhat:
+    environment:
+      HARDHAT_NETWORK: mumbai
+    command: npx hardhat node --hostname 0.0.0.0 --port 8545
+
+  # Monitoring - Staging configuration
+  prometheus:
+    command: 
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=7d'
+      - '--web.enable-lifecycle'
+
+  grafana:
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin_staging
+      GF_INSTALL_PLUGINS: grafana-clock-panel,grafana-simple-json-datasource
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M

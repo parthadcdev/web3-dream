@@ -91,7 +91,7 @@ make run-status
 - `smart-contracts` - Run Hardhat node only
 - `backend` - Run backend API only
 - `frontend` - Run frontend only
-- `mcp` - Run MCP servers only
+- `mcp` - Run unified MCP server only
 - `dev` - Run in development mode
 - `prod` - Run in production mode
 
@@ -197,7 +197,7 @@ make deploy-rollback # Rollback deployment
 ### **MCP Commands**
 ```bash
 make mcp-setup      # Setup MCP integration
-make mcp-start      # Start MCP servers
+make mcp-start      # Start unified MCP server
 make mcp-status     # Show MCP status
 make mcp-demo       # Run MCP demonstration
 make mcp-analyze    # Run MCP analysis

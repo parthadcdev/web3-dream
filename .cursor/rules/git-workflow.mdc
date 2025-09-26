@@ -1,0 +1,58 @@
+---
+alwaysApply: true
+description: Git workflow and branching strategy for TraceChain
+---
+
+# Git Workflow for TraceChain
+
+## Branching Strategy
+- **main**: Production-ready code
+- **develop**: Integration branch for features
+- **feature/**: Feature development branches
+- **bugfix/**: Bug fix branches
+- **hotfix/**: Critical production fixes
+
+## Git MCP Tools Usage
+Use the integrated MCP Git tools for all Git operations:
+
+### Smart Commits
+```bash
+# Create intelligent commit with Linear integration
+"Commit these changes with Linear issue AXO-123"
+```
+
+### Branch Management
+```bash
+# Create feature branch linked to Linear issue
+"Create feature branch for user authentication with Linear issue AXO-124"
+```
+
+### Pre-commit Validation
+```bash
+# Run comprehensive pre-commit checks
+"Run pre-commit review on these files with security scan"
+```
+
+## Commit Message Convention
+- `feat:` - New features
+- `fix:` - Bug fixes
+- `docs:` - Documentation changes
+- `style:` - Code style changes
+- `refactor:` - Code refactoring
+- `test:` - Test additions/changes
+- `chore:` - Build process or auxiliary tool changes
+
+## Linear Integration
+- Always link commits to Linear issues when possible
+- Use Linear issue IDs in commit messages: `(AXO-123)`
+- Create Linear issues for major features and bugs
+- Update Linear issues when completing work
+
+## Code Review Process
+1. Create feature branch from `develop`
+2. Implement changes with proper tests
+3. Run pre-commit validation
+4. Create pull request with Linear issue reference
+5. Merge to `develop` after review
+6. Deploy to staging for testing
+7. Merge to `main` for production release

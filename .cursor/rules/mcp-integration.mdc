@@ -1,0 +1,38 @@
+---
+alwaysApply: true
+description: MCP server integration and Git automation tools
+---
+
+# MCP Integration Guide
+
+## Unified MCP Server
+The project uses a unified MCP server ([mcp-server-unified.js](mdc:mcp-server-unified.js)) that provides:
+
+### Git Operations & Automation
+- `git_status` - Comprehensive Git status with file analysis
+- `git_commit_smart` - Intelligent commits with context-aware messages
+- `git_create_branch` - Feature branch creation with Linear integration
+- `git_merge_smart` - Smart merge with conflict resolution
+- `git_pre_commit_review` - Pre-commit validation and checks
+- `git_log_analysis` - Git history analysis and patterns
+- `git_release_management` - Automated versioning and changelog generation
+
+### Project Management
+- `check_project_health` - Overall project health monitoring
+- `analyze_project_structure` - Project structure analysis
+- `build_component` - Build specific components
+- `deploy_application` - Deploy to various environments
+
+### Linear Integration
+- `create_linear_issue` - Create Linear issues
+- `search_linear_issues` - Search and filter issues
+- `update_linear_issue` - Update issue status and details
+
+## Usage
+- MCP server runs automatically with Cursor
+- Use natural language commands for Git operations
+- All tools are context-aware and understand the TraceChain project
+- Linear issues are automatically linked to Git operations
+
+## Configuration
+MCP server is configured in [.cursor/mcp.json](mdc:.cursor/mcp.json) with environment variables for Linear API integration.

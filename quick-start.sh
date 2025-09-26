@@ -69,8 +69,8 @@ fi
 
 # Start MCP servers
 print_info "Starting MCP servers..."
-if [ -f "run-mcp.sh" ]; then
-    ./run-mcp.sh start
+if [ -f "run-mcp-unified.sh" ]; then
+    ./run-mcp-unified.sh start
     print_status "MCP servers started"
 else
     echo "⚠️  MCP runner script not found"
@@ -94,9 +94,9 @@ echo "• Cursor IDE integration configured"
 echo "• Use MCP commands in Cursor for analysis"
 echo ""
 echo -e "${BLUE}Quick Commands:${NC}"
-echo "• ./run-mcp.sh status    - Check MCP status"
-echo "• ./run-mcp.sh health    - Check project health"
-echo "• ./run-mcp.sh demo      - Run MCP demonstration"
+echo "• ./run-mcp-unified.sh status    - Check unified MCP status"
+echo "• ./run-mcp-unified.sh test      - Test unified MCP functionality"
+echo "• ./run-mcp-unified.sh logs      - View unified MCP logs"
 echo "• make logs              - View all logs"
 echo "• make stop              - Stop all services"
 echo ""

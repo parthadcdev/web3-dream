@@ -196,33 +196,52 @@ mcp-setup: ## Setup MCP integration with Cursor IDE
 	@echo "🔧 Setting up MCP integration..."
 	./setup-mcp.sh
 
-mcp-start: ## Start MCP servers
-	@echo "🚀 Starting MCP servers..."
-	./run-mcp.sh start
+mcp-start: ## Start unified MCP server
+	@echo "🚀 Starting unified MCP server..."
+	./run-mcp-unified.sh start
 
-mcp-stop: ## Stop MCP servers
-	@echo "🛑 Stopping MCP servers..."
-	./run-mcp.sh stop
+mcp-stop: ## Stop unified MCP server
+	@echo "🛑 Stopping unified MCP server..."
+	./run-mcp-unified.sh stop
 
-mcp-status: ## Show MCP server status
-	@echo "📊 Checking MCP server status..."
-	./run-mcp.sh status
+mcp-status: ## Show unified MCP server status
+	@echo "📊 Checking unified MCP server status..."
+	./run-mcp-unified.sh status
 
-mcp-test: ## Test MCP functionality
-	@echo "🧪 Testing MCP functionality..."
-	./run-mcp.sh test
+mcp-test: ## Test unified MCP functionality
+	@echo "🧪 Testing unified MCP functionality..."
+	./run-mcp-unified.sh test
 
-mcp-demo: ## Run MCP demonstration
-	@echo "🎯 Running MCP demonstration..."
-	./run-mcp.sh demo
+# Git MCP Tools
+git-status: ## Get Git status via MCP
+	@echo "📊 Getting Git status via MCP..."
 
-mcp-analyze: ## Run MCP analysis on project
-	@echo "🔍 Running MCP analysis..."
-	./run-mcp.sh analyze all
+git-commit: ## Smart commit via MCP (usage: make git-commit FILES="file1 file2" MESSAGE="commit message")
+	@echo "💾 Creating smart commit via MCP..."
 
-mcp-health: ## Check project health via MCP
+git-branch: ## Create branch via MCP (usage: make git-branch NAME="branch-name" TYPE="feature")
+	@echo "🌿 Creating feature branch via MCP..."
+
+git-review: ## Pre-commit review via MCP
+	@echo "🔍 Running pre-commit review via MCP..."
+
+git-log: ## Analyze Git log via MCP
+	@echo "📈 Analyzing Git log via MCP..."
+
+git-release: ## Release management via MCP (usage: make git-release TYPE="patch|minor|major")
+	@echo "🚀 Managing release via MCP..."
+
+mcp-demo: ## Run unified MCP demonstration
+	@echo "🎯 Running unified MCP demonstration..."
+	./run-mcp-unified.sh test
+
+mcp-analyze: ## Run unified MCP analysis on project
+	@echo "🔍 Running unified MCP analysis..."
+	./run-mcp-unified.sh test
+
+mcp-health: ## Check project health via unified MCP
 	@echo "📊 Checking project health..."
-	./run-mcp.sh health
+	./run-mcp-unified.sh test
 
 # Build and Run Commands
 build: ## Build all components

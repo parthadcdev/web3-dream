@@ -1,14 +1,18 @@
 # Cursor AI IDE MCP Setup for TraceChain
 
-This guide will help you configure Model Context Protocol (MCP) with Cursor AI IDE to enhance your TraceChain development workflow.
+This guide will help you configure the Unified Model Context Protocol (MCP) with Cursor AI IDE to enhance your TraceChain development workflow.
 
-## 🎯 What MCP Will Give You
+## 🎯 What the Unified MCP Will Give You
 
 - **Real-time Smart Contract Analysis**: Security vulnerabilities, gas optimization, best practices
 - **API Validation**: Security checks, performance analysis, input sanitization
 - **Project Health Monitoring**: Track progress against your implementation roadmap
 - **Automated Test Generation**: Unit, integration, and E2E test suggestions
 - **Docker Optimization**: Performance and security improvements
+- **Linear Integration**: Create, search, and manage issues directly from Cursor
+- **Build & Deployment**: Automated building and deployment to various environments
+- **Security Scanning**: Comprehensive security analysis across all components
+- **Git Operations**: Smart commits, branch management, and automated Git workflows
 
 ## 📋 Setup Instructions
 
@@ -26,52 +30,45 @@ This guide will help you configure Model Context Protocol (MCP) with Cursor AI I
 
 4. **The system will create/open** `~/.cursor/mcp.json`
 
-### Step 2: Update MCP Configuration
+### Step 2: Unified MCP Configuration
 
-Replace the contents of `~/.cursor/mcp.json` with our TraceChain configuration:
+The unified MCP configuration is already set up in `.cursor/mcp.json`:
 
 ```json
 {
   "mcpServers": {
-    "tracechain-project": {
+    "tracechain-unified": {
       "command": "node",
-      "args": ["/Users/partha/Work/web3-dream/mcp-server.js"],
+      "args": ["./mcp-server-unified.js"],
       "env": {
         "PROJECT_ROOT": "/Users/partha/Work/web3-dream",
-        "NODE_ENV": "development"
-      }
-    },
-    "tracechain-api-validator": {
-      "command": "node",
-      "args": ["/Users/partha/Work/web3-dream/backend/src/scripts/mcp-api-validator.js"],
-      "env": {
-        "PROJECT_ROOT": "/Users/partha/Work/web3-dream",
-        "API_BASE_URL": "http://localhost:3000",
-        "DATABASE_URL": "postgresql://tracechain_user:tracechain_password@localhost:5432/tracechain_db"
-      }
-    },
-    "tracechain-smart-contracts": {
-      "command": "npx",
-      "args": ["hardhat", "console", "--network", "localhost"],
-      "cwd": "/Users/partha/Work/web3-dream/smart-contracts",
-      "env": {
-        "HARDHAT_NETWORK": "localhost",
-        "CONTRACT_PATH": "/Users/partha/Work/web3-dream/smart-contracts"
+        "NODE_ENV": "development",
+        "LINEAR_API_KEY": "your_linear_api_key",
+        "LINEAR_TEAM_ID": "your_team_id",
+        "LINEAR_WORKSPACE_ID": "your_workspace_id"
       }
     }
   }
 }
 ```
 
-### Step 3: Make Scripts Executable
+**Note**: This unified configuration replaces the previous multiple MCP servers with a single, comprehensive server.
 
-Run these commands in your terminal:
+### Step 3: Start the Unified MCP Server
+
+The unified MCP server is ready to use. Start it with:
 
 ```bash
 cd /Users/partha/Work/web3-dream
-chmod +x mcp-server.js
-chmod +x backend/src/scripts/mcp-api-validator.js
+./run-mcp-unified.sh start
 ```
+
+**Available commands:**
+- `./run-mcp-unified.sh start` - Start the server
+- `./run-mcp-unified.sh stop` - Stop the server
+- `./run-mcp-unified.sh status` - Check server status
+- `./run-mcp-unified.sh test` - Test server functionality
+- `./run-mcp-unified.sh logs` - View server logs
 
 ### Step 4: Install Additional Dependencies (Optional)
 
@@ -99,7 +96,7 @@ npm install -g artillery
    - Use `Cmd/Ctrl + Shift + P` to open command palette
    - Type "MCP" to see available MCP tools
 
-## 🚀 Using MCP Tools
+## 🚀 Using Unified MCP Tools
 
 ### Smart Contract Analysis
 
@@ -149,20 +146,51 @@ Ask Cursor: "Use MCP to generate unit tests for smart-contracts/contracts/Produc
 Ask Cursor: "Use MCP to generate integration tests for backend/src/routes/products.ts"
 ```
 
-## 🔧 Available MCP Tools
+## 🔧 Available Unified MCP Tools
 
-### TraceChain Project Server
-- `analyze_smart_contract` - Security, gas, and best practices analysis
+### Project Management
 - `check_project_health` - Overall project health monitoring
-- `generate_test_suite` - Comprehensive test generation
-- `optimize_docker_config` - Docker performance optimization
+- `analyze_project_structure` - Project structure analysis
+- `monitor_performance` - Performance monitoring
 
-### API Validator Server
-- `validate_endpoint_security` - Security vulnerability checks
-- `check_api_performance` - Performance optimization analysis
-- `validate_input_sanitization` - Input validation and sanitization
-- `check_error_handling` - Error handling implementation
-- `generate_api_tests` - API test suite generation
+### Smart Contracts
+- `analyze_smart_contract` - Security, gas, and best practices analysis
+- `compile_smart_contracts` - Compile contracts for different networks
+- `deploy_smart_contracts` - Deploy contracts to various networks
+
+### API Management
+- `validate_api_endpoint` - API endpoint validation
+- `test_api_endpoints` - API functionality testing
+
+### Build & Deployment
+- `build_component` - Build application components
+- `deploy_application` - Deploy to various environments
+- `check_deployment_status` - Check deployment status
+- `rollback_deployment` - Rollback to previous versions
+
+### Linear Integration
+- `create_linear_issue` - Create new issues
+- `search_linear_issues` - Search existing issues
+- `update_linear_issue` - Update issue details
+- `get_linear_teams` - Get team information
+
+### Security & Testing
+- `run_security_scan` - Comprehensive security scanning
+- `generate_test_suite` - Generate test suites
+- `run_health_checks` - Run health checks
+
+### Monitoring & Optimization
+- `optimize_docker_config` - Docker configuration optimization
+- `monitor_performance` - Performance monitoring
+
+### Git Operations & Automation
+- `git_status` - Get comprehensive Git status with file analysis
+- `git_commit_smart` - Create intelligent commit with context-aware message
+- `git_create_branch` - Create feature branch with Linear issue integration
+- `git_merge_smart` - Perform intelligent merge with conflict resolution
+- `git_pre_commit_review` - Run comprehensive pre-commit review and validation
+- `git_log_analysis` - Analyze Git commit history and patterns
+- `git_release_management` - Manage releases with automated versioning and tagging
 
 ## 📊 Example MCP Interactions
 
@@ -189,6 +217,61 @@ Result: Performance score: 78/100
 - 💡 Recommendations: Add caching layer, implement compression
 ```
 
+### 3. Linear Issue Management
+```
+User: "Create a bug report for the authentication issue"
+Cursor: "Creating Linear issue..."
+Result: Issue AXO-123 created successfully
+- Title: "Authentication fails on mobile devices"
+- Priority: High
+- Labels: bug, mobile, authentication
+- URL: https://linear.app/axonsphere/issue/AXO-123
+```
+
+### 4. Build & Deployment
+```
+User: "Build the frontend for production"
+Cursor: "Building frontend component for production..."
+Result: Build completed successfully
+- Environment: production
+- Component: frontend
+- Status: success
+- Output: Built files in build/frontend/
+```
+
+### 5. Security Scanning
+```
+User: "Run a comprehensive security scan"
+Cursor: "Running security scan on all components..."
+Result: Security scan completed
+- Dependencies: 2 vulnerabilities found
+- Code: 1 potential issue detected
+- Containers: No issues found
+- Recommendations: Update vulnerable packages
+```
+
+### 6. Smart Git Commit
+```
+User: "Commit these changes with Linear issue AXO-123"
+Cursor: "Creating smart commit with Linear integration..."
+Result: Commit created successfully
+- Message: "feat: Add user authentication with JWT tokens (AXO-123)"
+- Files: 3 files committed
+- Linear issue linked: true
+- Pre-commit checks: passed
+```
+
+### 7. Branch Management
+```
+User: "Create feature branch for payment integration"
+Cursor: "Creating feature branch with Linear integration..."
+Result: Branch created successfully
+- Branch: feature/payment-integration
+- Base: develop
+- Linear issue: AXO-124
+- Status: Ready for development
+```
+
 ### 3. Project Health Check
 ```
 User: "How is my project doing overall?"
@@ -202,23 +285,25 @@ Result: Project Health: 82/100
 
 ## 🛠️ Troubleshooting
 
-### MCP Server Not Starting
-1. Check file paths in `~/.cursor/mcp.json`
-2. Ensure scripts are executable (`chmod +x`)
-3. Verify Node.js is installed and accessible
-4. Check Cursor logs for error messages
+### Unified MCP Server Not Starting
+1. Check if server is running: `./run-mcp-unified.sh status`
+2. View server logs: `./run-mcp-unified.sh logs`
+3. Ensure scripts are executable (`chmod +x`)
+4. Verify Node.js is installed and accessible
+5. Check environment variables are set correctly
 
 ### Tools Not Available
 1. Restart Cursor IDE after configuration changes
-2. Verify MCP servers show green status
+2. Verify unified MCP server shows green status
 3. Check that project files exist at specified paths
-4. Ensure environment variables are set correctly
+4. Ensure Linear API credentials are configured
+5. Test server functionality: `./run-mcp-unified.sh test`
 
 ### Performance Issues
-1. Limit MCP server scope to specific directories
-2. Use file filters to avoid analyzing large files
-3. Disable unused MCP servers
-4. Check system resources (CPU, memory)
+1. Check server status and restart if needed
+2. Monitor server logs for errors
+3. Verify system resources (CPU, memory)
+4. Use specific tool categories instead of running all tools
 
 ## 🎯 Best Practices
 
@@ -245,6 +330,42 @@ Generate tests for new components:
 ```
 "Use MCP to generate comprehensive tests for new smart contract"
 ```
+
+### 5. Linear Integration
+Use Linear for issue tracking and project management:
+```
+"Use MCP to create a bug report for the authentication issue"
+"Use MCP to search for all high-priority issues"
+```
+
+### 6. Build & Deployment Automation
+Automate your build and deployment processes:
+```
+"Use MCP to build the frontend for production"
+"Use MCP to deploy the application to staging"
+```
+
+## 🚀 Benefits of Unified MCP
+
+### Single Point of Management
+- **One Server**: All functionality in a single, easy-to-manage server
+- **Unified Context**: Shared state across all tools and operations
+- **Simplified Configuration**: Single configuration file instead of multiple
+
+### Enhanced Integration
+- **Cross-Tool Communication**: Tools can work together seamlessly
+- **Shared Resources**: Common utilities and helpers across all tools
+- **Consistent Error Handling**: Unified error management and reporting
+
+### Better Performance
+- **Reduced Resource Usage**: Lower memory and CPU footprint
+- **Faster Startup**: Single server startup instead of multiple
+- **Optimized Operations**: Shared caching and optimization strategies
+
+### Improved Developer Experience
+- **Single Command**: One command to start/stop all functionality
+- **Unified Logging**: All logs in one place for easier debugging
+- **Consistent Interface**: Same interaction patterns across all tools
 
 ## 📈 Expected Benefits
 

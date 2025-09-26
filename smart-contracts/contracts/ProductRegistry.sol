@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/security/Pausable.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/Pausable.sol";
+// SafeMath removed in OpenZeppelin v5.0.0 - Solidity 0.8+ has built-in overflow protection
 
 contract ProductRegistry is Ownable, ReentrancyGuard, Pausable {
-    using SafeMath for uint256;
+
+    constructor() Ownable(msg.sender) {}
 
     struct Product {
         uint256 productId;

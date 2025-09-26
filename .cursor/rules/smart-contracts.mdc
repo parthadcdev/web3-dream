@@ -1,0 +1,40 @@
+---
+globs: *.sol
+description: Solidity smart contract patterns and conventions
+---
+
+# Smart Contract Patterns for TraceChain
+
+## Contract Structure
+- Use OpenZeppelin contracts for security and standards
+- Implement proper access control with `Ownable` and `Pausable`
+- Use `ReentrancyGuard` for functions that handle external calls
+- Follow the established patterns in [smart-contracts/contracts/](mdc:smart-contracts/contracts/)
+
+## Key Contracts
+- **NFTCertificate**: [smart-contracts/contracts/NFTCertificate.sol](mdc:smart-contracts/contracts/NFTCertificate.sol) - NFT certificates for product traceability
+- **NFTFactory**: [smart-contracts/contracts/NFTFactory.sol](mdc:smart-contracts/contracts/NFTFactory.sol) - Factory for creating NFT instances
+- **ProductRegistry**: Core product registration and tracking
+
+## Security Patterns
+- Always validate inputs with `require()` statements
+- Use `modifier` for access control
+- Implement proper event emission for transparency
+- Use `whenNotPaused` modifier for emergency stops
+
+## Gas Optimization
+- Use `view` and `pure` functions where possible
+- Avoid loops in external functions
+- Use `storage` vs `memory` appropriately
+- Consider contract size limits (24KB)
+
+## Testing
+- Write comprehensive tests in [smart-contracts/test/](mdc:smart-contracts/test/)
+- Use Hardhat testing framework
+- Test all access control scenarios
+- Verify gas usage and optimization
+
+## Deployment
+- Use Hardhat deployment scripts in [smart-contracts/scripts/](mdc:smart-contracts/scripts/)
+- Support multiple networks (localhost, mumbai, polygon)
+- Implement proper contract verification

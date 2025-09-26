@@ -1,0 +1,45 @@
+---
+globs: *.ts,*.tsx
+description: TypeScript coding patterns and conventions for TraceChain
+---
+
+# TypeScript Patterns for TraceChain
+
+## Error Handling
+Always use `globalThis.Error` instead of `Error` constructor to avoid TypeScript strict mode issues:
+
+```typescript
+// ✅ Correct
+throw new globalThis.Error('Error message');
+
+// ❌ Avoid
+throw new Error('Error message');
+```
+
+## API Response Patterns
+Use consistent error handling patterns in API calls:
+
+```typescript
+if (!response.ok) {
+  const error = await response.json();
+  throw new globalThis.Error(error.error?.message || 'Operation failed');
+}
+```
+
+## Component Structure
+- Use Material-UI components consistently
+- Implement proper TypeScript interfaces for props
+- Use React hooks for state management
+- Follow the established Redux patterns in [frontend/src/store/](mdc:frontend/src/store/)
+
+## File Organization
+- Keep components in [frontend/src/components/](mdc:frontend/src/components/)
+- Store pages in [frontend/src/pages/](mdc:frontend/src/pages/)
+- Use contexts for global state in [frontend/src/contexts/](mdc:frontend/src/contexts/)
+- API types in [frontend/src/types/](mdc:frontend/src/types/)
+
+## Backend Patterns
+- Use Express.js with TypeScript in [backend/src/](mdc:backend/src/)
+- Implement proper middleware for authentication
+- Use JWT tokens for authentication
+- Follow RESTful API conventions

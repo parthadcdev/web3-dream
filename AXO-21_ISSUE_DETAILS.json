@@ -1,0 +1,38 @@
+{
+  "id": "813badb8-3108-48d4-a76c-0a197f22b5fb",
+  "identifier": "AXO-21",
+  "title": "Fix Smart Contract Compilation Errors",
+  "description": "Fix compilation errors in NFTCertificate.sol - verifyCertificate function visibility issue. Estimate: 1 day. Status: 0% Complete (compilation failing).",
+  "state": {
+    "id": "74a380da-48d6-48af-87e8-bdd0402b1801",
+    "name": "In Progress",
+    "type": "started"
+  },
+  "priority": 1,
+  "labels": [
+    {
+      "id": "4eaef06b-b435-4ce2-a3c9-a4ae57a9a498",
+      "name": "Bug",
+      "color": "#EB5757"
+    }
+  ],
+  "assignee": null,
+  "creator": {
+    "id": "591e0888-05cf-4048-b6f1-fbf7bdad2d3e",
+    "name": "Partha Chandramohan",
+    "email": "parthadcdev@gmail.com"
+  },
+  "createdAt": "2025-09-26T14:14:41.759Z",
+  "updatedAt": "2025-09-26T14:46:46.970Z",
+  "dueDate": null,
+  "estimate": null,
+  "project": {
+    "id": "37df0277-cb49-402e-9d3c-d4489dd0b3c8",
+    "name": "TraceSecur - Decentralized Traceability Platform"
+  },
+  "team": {
+    "id": "9b0fb88f-c6f6-4a15-b952-af836c4a25c4",
+    "name": "Axonsphere"
+  },
+  "comments": []
+}

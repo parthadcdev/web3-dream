@@ -1,0 +1,54 @@
+---
+alwaysApply: true
+description: Linear issue tracking integration patterns
+---
+
+# Linear Integration for TraceChain
+
+## Linear Configuration
+Linear integration is configured in [.cursor/mcp.json](mdc:.cursor/mcp.json) with:
+- **API Key**: `LINEAR_API_KEY`
+- **Team ID**: `LINEAR_TEAM_ID` 
+- **Workspace ID**: `LINEAR_WORKSPACE_ID`
+
+## MCP Linear Tools
+Use MCP tools for Linear operations:
+- `create_linear_issue` - Create new issues
+- `search_linear_issues` - Search and filter issues
+- `update_linear_issue` - Update issue status and details
+- `get_linear_teams` - Get team information
+
+## Issue Management Workflow
+1. **Create Issue**: Use MCP tool to create Linear issue
+2. **Link to Git**: Use `git_create_branch` with Linear issue ID
+3. **Track Progress**: Update issue status as work progresses
+4. **Link Commits**: Use `git_commit_smart` with Linear integration
+5. **Close Issue**: Update issue status when work is complete
+
+## Issue Types and Labels
+- **Feature**: New functionality development
+- **Bug**: Bug fixes and issues
+- **Enhancement**: Improvements to existing features
+- **Documentation**: Documentation updates
+- **Refactor**: Code refactoring tasks
+
+## Priority Levels
+- **Urgent**: Critical issues requiring immediate attention
+- **High**: Important issues that should be addressed soon
+- **Normal**: Standard priority issues
+- **Low**: Nice-to-have features or minor issues
+
+## Git Integration
+- Link commits to Linear issues using issue IDs
+- Use consistent issue ID format: `(AXO-123)`
+- Create branches with issue context
+- Update Linear issues when merging PRs
+
+## Best Practices
+- Create Linear issues for all significant work
+- Use descriptive titles and detailed descriptions
+- Assign issues to appropriate team members
+- Use labels for categorization and filtering
+- Link related issues and dependencies
+- Update issue status regularly
+- Close issues when work is complete

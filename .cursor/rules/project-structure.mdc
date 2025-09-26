@@ -1,0 +1,27 @@
+---
+alwaysApply: true
+description: TraceChain project structure and architecture guide
+---
+
+# TraceChain Project Structure
+
+## Core Architecture
+TraceChain is a decentralized traceability platform with the following structure:
+
+- **Frontend**: React TypeScript app in [frontend/](mdc:frontend/) - Material-UI based interface
+- **Backend**: Node.js/Express API in [backend/](mdc:backend/) - RESTful API with JWT authentication
+- **Smart Contracts**: Solidity contracts in [smart-contracts/](mdc:smart-contracts/) - Hardhat-based blockchain contracts
+- **MCP Server**: Unified MCP server in [mcp-server-unified.js](mdc:mcp-server-unified.js) - Git automation and project management
+- **Infrastructure**: Docker/Podman setup with PostgreSQL, Redis, Prometheus, Grafana
+
+## Key Files
+- **Main MCP Server**: [mcp-server-unified.js](mdc:mcp-server-unified.js) - Unified MCP with Git operations
+- **Docker Compose**: [docker-compose.yml](mdc:docker-compose.yml) - Multi-service orchestration
+- **Build Scripts**: [build-app.sh](mdc:build-app.sh), [run-app.sh](mdc:run-app.sh), [deploy.sh](mdc:deploy.sh)
+- **Configuration**: [.cursor/mcp.json](mdc:.cursor/mcp.json) - Cursor MCP integration
+
+## Development Workflow
+1. Use MCP tools for Git operations and project management
+2. Backend API runs on port 3000, Frontend on port 3001
+3. Smart contracts use Hardhat with local node on port 8545
+4. All services orchestrated via Docker Compose

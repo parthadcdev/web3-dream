@@ -1,0 +1,59 @@
+---
+alwaysApply: true
+description: Security patterns and best practices for TraceChain
+---
+
+# Security Patterns for TraceChain
+
+## Authentication & Authorization
+- Use JWT tokens for API authentication
+- Implement proper session management
+- Validate all user inputs and API requests
+- Use role-based access control (RBAC)
+
+## Smart Contract Security
+- Follow OpenZeppelin security patterns
+- Implement proper access control with modifiers
+- Use `ReentrancyGuard` for external calls
+- Validate all inputs with `require()` statements
+- Emit events for transparency and auditing
+
+## API Security
+- Implement rate limiting for API endpoints
+- Use HTTPS in production environments
+- Validate and sanitize all inputs
+- Implement proper error handling without information leakage
+- Use CORS configuration appropriately
+
+## Data Protection
+- Encrypt sensitive data at rest
+- Use secure communication protocols
+- Implement proper data validation
+- Follow GDPR and privacy regulations
+- Secure database connections
+
+## MCP Security Tools
+Use integrated security tools:
+- `run_security_scan` - Comprehensive security analysis
+- `validate_api_endpoint` - API security validation
+- `git_pre_commit_review` - Pre-commit security checks
+
+## Security Checklist
+- [ ] Input validation on all endpoints
+- [ ] Authentication on protected routes
+- [ ] Rate limiting implemented
+- [ ] HTTPS enabled in production
+- [ ] Database queries parameterized
+- [ ] Error messages don't leak information
+- [ ] Dependencies regularly updated
+- [ ] Security headers configured
+- [ ] Logging and monitoring in place
+
+## Common Vulnerabilities to Avoid
+- SQL injection attacks
+- XSS (Cross-Site Scripting)
+- CSRF (Cross-Site Request Forgery)
+- Insecure direct object references
+- Security misconfiguration
+- Sensitive data exposure
+- Insufficient logging and monitoring

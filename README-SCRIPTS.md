@@ -13,12 +13,12 @@ One-command setup and start for the entire TraceChain project.
 
 **What it does:**
 - Installs all dependencies (smart contracts, backend, frontend)
-- Sets up MCP integration with Cursor IDE
+- Sets up unified MCP integration with Cursor IDE
 - Starts Docker services
-- Starts MCP servers
+- Starts unified MCP server
 - Provides service URLs and quick commands
 
-## 🔧 MCP Integration Scripts
+## 🔧 Unified MCP Integration Scripts
 
 ### `setup-mcp.sh`
 Comprehensive setup for Model Context Protocol integration with Cursor AI IDE.
@@ -34,32 +34,28 @@ Comprehensive setup for Model Context Protocol integration with Cursor AI IDE.
 - Sets up test scripts
 - Provides usage examples
 
-### `run-mcp.sh`
-Interactive MCP server management and analysis tool.
+### `run-mcp-unified.sh`
+Unified MCP server management and analysis tool.
 
 ```bash
-./run-mcp.sh [command] [options]
+./run-mcp-unified.sh [command] [options]
 ```
 
 **Commands:**
-- `start` - Start MCP servers
-- `stop` - Stop MCP servers  
-- `restart` - Restart MCP servers
-- `status` - Show MCP server status
-- `test` - Test MCP functionality
-- `analyze [target]` - Run analysis (contracts/api/all)
-- `health` - Check project health
-- `demo` - Run MCP demonstration
-- `logs` - Show MCP server logs
+- `start` - Start unified MCP server
+- `stop` - Stop unified MCP server  
+- `restart` - Restart unified MCP server
+- `status` - Show unified MCP server status
+- `test` - Test unified MCP functionality
+- `logs` - Show unified MCP server logs
 - `help` - Show help message
 
 **Examples:**
 ```bash
-./run-mcp.sh start                    # Start all MCP servers
-./run-mcp.sh analyze contracts       # Analyze smart contracts
-./run-mcp.sh analyze api             # Analyze API endpoints
-./run-mcp.sh health                  # Check project health
-./run-mcp.sh demo                    # Run MCP demonstration
+./run-mcp-unified.sh start                    # Start unified MCP server
+./run-mcp-unified.sh status                   # Check server status
+./run-mcp-unified.sh test                     # Test server functionality
+./run-mcp-unified.sh logs                     # View server logs
 ```
 
 ## 📋 Makefile Commands
@@ -72,15 +68,15 @@ make install          # Install all dependencies
 make quick-start      # One-command setup and start
 ```
 
-### MCP Commands
+### Unified MCP Commands
 ```bash
-make mcp-setup        # Setup MCP integration
-make mcp-start        # Start MCP servers
-make mcp-stop         # Stop MCP servers
-make mcp-status       # Show MCP server status
-make mcp-test         # Test MCP functionality
-make mcp-demo         # Run MCP demonstration
-make mcp-analyze      # Run MCP analysis
+make mcp-setup        # Setup unified MCP integration
+make mcp-start        # Start unified MCP server
+make mcp-stop         # Stop unified MCP server
+make mcp-status       # Show unified MCP server status
+make mcp-test         # Test unified MCP functionality
+make mcp-demo         # Run unified MCP demonstration
+make mcp-analyze      # Run unified MCP analysis
 make mcp-health       # Check project health
 ```
 
@@ -199,16 +195,16 @@ make logs
 
 ### Common Issues
 
-**MCP servers won't start:**
+**Unified MCP server won't start:**
 ```bash
-# Check if ports are available
-./run-mcp.sh status
+# Check if server is running
+./run-mcp-unified.sh status
 
-# Restart MCP servers
-./run-mcp.sh restart
+# Restart unified MCP server
+./run-mcp-unified.sh restart
 
 # Check logs
-./run-mcp.sh logs
+./run-mcp-unified.sh logs
 ```
 
 **Cursor IDE not detecting MCP:**

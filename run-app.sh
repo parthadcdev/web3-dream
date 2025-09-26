@@ -277,20 +277,20 @@ start_frontend() {
     fi
 }
 
-# Function to start MCP servers
+# Function to start unified MCP server
 start_mcp() {
-    print_header "Starting MCP Servers"
+    print_header "Starting Unified MCP Server"
     
-    if [ -f "$PROJECT_ROOT/run-mcp.sh" ]; then
-        print_info "Starting MCP servers..."
-        "$PROJECT_ROOT/run-mcp.sh" start
+    if [ -f "$PROJECT_ROOT/run-mcp-unified.sh" ]; then
+        print_info "Starting unified MCP server..."
+        "$PROJECT_ROOT/run-mcp-unified.sh" start
         if [ $? -eq 0 ]; then
-            print_status "MCP servers started"
+            print_status "Unified MCP server started"
         else
-            print_warning "MCP servers failed to start"
+            print_warning "Unified MCP server failed to start"
         fi
     else
-        print_warning "MCP runner script not found"
+        print_warning "Unified MCP runner script not found"
     fi
 }
 
@@ -298,10 +298,10 @@ start_mcp() {
 stop_all() {
     print_header "Stopping All Services"
     
-    # Stop MCP servers
-    if [ -f "$PROJECT_ROOT/run-mcp.sh" ]; then
-        print_info "Stopping MCP servers..."
-        "$PROJECT_ROOT/run-mcp.sh" stop
+    # Stop unified MCP server
+    if [ -f "$PROJECT_ROOT/run-mcp-unified.sh" ]; then
+        print_info "Stopping unified MCP server..."
+        "$PROJECT_ROOT/run-mcp-unified.sh" stop
     fi
     
     # Stop individual processes
@@ -384,11 +384,11 @@ show_status() {
         print_error "Frontend: Not running"
     fi
     
-    # Check MCP status
-    if [ -f "$PROJECT_ROOT/run-mcp.sh" ]; then
+    # Check unified MCP status
+    if [ -f "$PROJECT_ROOT/run-mcp-unified.sh" ]; then
         echo ""
-        print_info "MCP Servers:"
-        "$PROJECT_ROOT/run-mcp.sh" status
+        print_info "Unified MCP Server:"
+        "$PROJECT_ROOT/run-mcp-unified.sh" status
     fi
 }
 

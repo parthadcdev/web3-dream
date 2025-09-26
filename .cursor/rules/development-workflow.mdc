@@ -1,0 +1,59 @@
+---
+alwaysApply: true
+description: Development workflow and best practices for TraceChain
+---
+
+# Development Workflow for TraceChain
+
+## Getting Started
+1. **Start MCP Server**: `./run-mcp-unified.sh start`
+2. **Start Services**: `./run-app.sh start` or `make run`
+3. **Build Project**: `make build` or `./build-app.sh`
+4. **Run Tests**: `make test` or individual component tests
+
+## Daily Development Workflow
+1. **Check Project Health**: Use MCP `check_project_health` tool
+2. **Create Feature Branch**: Use `git_create_branch` with Linear issue
+3. **Develop Features**: Use MCP tools for Git operations
+4. **Run Pre-commit Checks**: Use `git_pre_commit_review`
+5. **Commit Changes**: Use `git_commit_smart` with Linear integration
+6. **Create Pull Request**: Link to Linear issue
+7. **Deploy to Staging**: Use `deploy_application` tool
+
+## Code Quality Standards
+- **TypeScript**: Use strict mode, proper typing
+- **ESLint**: Follow project linting rules
+- **Prettier**: Consistent code formatting
+- **Tests**: Maintain test coverage
+- **Documentation**: Update docs with changes
+
+## MCP Tool Usage
+- **Git Operations**: Always use MCP Git tools
+- **Project Management**: Use MCP project tools
+- **Linear Integration**: Use MCP Linear tools
+- **Security**: Use MCP security tools
+- **Deployment**: Use MCP deployment tools
+
+## File Organization
+- **Frontend**: [frontend/src/](mdc:frontend/src/) - React components and pages
+- **Backend**: [backend/src/](mdc:backend/src/) - Express API and routes
+- **Smart Contracts**: [smart-contracts/contracts/](mdc:smart-contracts/contracts/) - Solidity contracts
+- **Scripts**: [scripts/](mdc:scripts/) - Build and deployment scripts
+- **Documentation**: Root level `.md` files
+
+## Environment Management
+- **Development**: Local development with hot reload
+- **Staging**: Testing environment with production-like setup
+- **Production**: Live environment with monitoring
+
+## Monitoring and Debugging
+- **Health Checks**: Use `/api/health` endpoint
+- **Logs**: Check application logs in [logs/](mdc:logs/) directory
+- **Metrics**: Use Prometheus and Grafana for monitoring
+- **MCP Status**: Use `./run-mcp-unified.sh status`
+
+## Troubleshooting
+- **Port Conflicts**: Check `lsof -i :PORT` for port usage
+- **Docker Issues**: Use `docker-compose logs SERVICE`
+- **MCP Issues**: Check MCP server logs
+- **Build Issues**: Clean build directories and rebuild

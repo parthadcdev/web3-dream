@@ -1,0 +1,51 @@
+---
+globs: docker-compose*.yml,Dockerfile*,*.sh
+description: Docker and deployment patterns for TraceChain
+---
+
+# Docker & Deployment Patterns
+
+## Docker Compose Services
+The application uses multi-service Docker Compose setup in [docker-compose.yml](mdc:docker-compose.yml):
+
+- **postgres**: PostgreSQL database
+- **redis**: Redis cache
+- **backend**: Node.js API server
+- **frontend**: React application
+- **hardhat**: Smart contract node
+- **mosquitto**: MQTT message broker
+- **prometheus**: Metrics collection
+- **grafana**: Monitoring dashboard
+
+## Build and Deployment
+Use the provided scripts for consistent deployment:
+
+- **Build**: [build-app.sh](mdc:build-app.sh) - Build all components
+- **Run**: [run-app.sh](mdc:run-app.sh) - Start application services
+- **Deploy**: [deploy.sh](mdc:deploy.sh) - Deploy to various environments
+
+## Environment Configuration
+- **Development**: Local development with hot reload
+- **Staging**: [docker-compose.staging.yml](mdc:docker-compose.staging.yml) - Staging environment
+- **Production**: [docker-compose.prod.yml](mdc:docker-compose.prod.yml) - Production environment
+
+## Port Configuration
+- **Backend API**: 3000
+- **Frontend**: 3001
+- **Hardhat Node**: 8545
+- **PostgreSQL**: 5432
+- **Redis**: 6379
+- **Grafana**: 3001
+- **Prometheus**: 9090
+
+## Health Checks
+- Backend health: `GET http://localhost:3000/api/health`
+- Frontend: `http://localhost:3001`
+- Database connectivity verified in health checks
+- Redis connectivity verified in health checks
+
+## MCP Integration
+Use MCP tools for deployment operations:
+- `deploy_application` - Deploy to specified environment
+- `check_deployment_status` - Verify deployment health
+- `rollback_deployment` - Rollback if needed

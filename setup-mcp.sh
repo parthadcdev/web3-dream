@@ -15,7 +15,7 @@ NC='\033[0m' # No Color
 # Project configuration
 PROJECT_ROOT="/Users/partha/Work/web3-dream"
 CURSOR_MCP_CONFIG="$HOME/.cursor/mcp.json"
-MCP_SERVER="$PROJECT_ROOT/mcp-server.js"
+MCP_SERVER="$PROJECT_ROOT/mcp-server-unified.js"
 API_VALIDATOR="$PROJECT_ROOT/backend/src/scripts/mcp-api-validator.js"
 
 echo -e "${BLUE}🚀 TraceChain MCP Setup Script${NC}"
@@ -164,7 +164,7 @@ echo "🧪 Testing MCP Integration..."
 
 # Test MCP server startup
 echo "Testing MCP server startup..."
-timeout 5s node mcp-server.js &
+timeout 5s node mcp-server-unified.js &
 MCP_PID=$!
 sleep 2
 kill $MCP_PID 2>/dev/null

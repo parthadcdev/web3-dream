@@ -1,0 +1,59 @@
+---
+globs: *.test.*,*.spec.*,test/**
+description: Testing patterns and conventions for TraceChain
+---
+
+# Testing Patterns for TraceChain
+
+## Frontend Testing
+- Use React Testing Library for component testing
+- Test files in [frontend/src/](mdc:frontend/src/) with `.test.tsx` extension
+- Mock API calls and external dependencies
+- Test user interactions and component behavior
+
+## Backend Testing
+- Use Jest for unit and integration tests
+- Test API endpoints with proper request/response validation
+- Mock database and external service calls
+- Test authentication and authorization flows
+
+## Smart Contract Testing
+- Use Hardhat testing framework in [smart-contracts/test/](mdc:smart-contracts/test/)
+- Test all contract functions and edge cases
+- Verify access control and security measures
+- Test gas usage and optimization
+- Use fixtures for common test data
+
+## Test Organization
+```
+frontend/src/
+├── components/
+│   └── ComponentName.test.tsx
+├── pages/
+│   └── PageName.test.tsx
+└── store/
+    └── sliceName.test.ts
+
+smart-contracts/test/
+├── ContractName.test.js
+└── Integration.test.js
+```
+
+## Test Commands
+- **Frontend**: `npm test` in [frontend/](mdc:frontend/) directory
+- **Backend**: `npm test` in [backend/](mdc:backend/) directory
+- **Smart Contracts**: `npm test` in [smart-contracts/](mdc:smart-contracts/) directory
+- **All Tests**: `make test` from project root
+
+## MCP Testing Tools
+Use MCP tools for comprehensive testing:
+- `run_security_scan` - Security vulnerability scanning
+- `generate_test_suite` - Generate test suites for components
+- `run_health_checks` - Verify system health
+- `git_pre_commit_review` - Pre-commit validation
+
+## Test Data
+- Use consistent test data across all test suites
+- Mock external API responses
+- Use factories for creating test objects
+- Clean up test data after each test
