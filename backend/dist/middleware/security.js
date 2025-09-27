@@ -1,10 +1,16 @@
-import rateLimit from 'express-rate-limit';
-import helmet from 'helmet';
-import cors from 'cors';
-import { validationResult } from 'express-validator';
-import { createError } from './errorHandler.js';
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.securityResponseHeaders = exports.requestTimeout = exports.ipWhitelist = exports.validateRequest = exports.csrfProtection = exports.securityLogger = exports.requestSizeLimit = exports.xssProtection = exports.sqlInjectionProtection = exports.sanitizeInput = exports.strictRateLimit = exports.apiRateLimit = exports.authRateLimit = exports.generalRateLimit = exports.createRateLimit = exports.corsConfig = exports.securityHeaders = void 0;
+const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
+const helmet_1 = __importDefault(require("helmet"));
+const cors_1 = __importDefault(require("cors"));
+const express_validator_1 = require("express-validator");
+const errorHandler_1 = require("./errorHandler");
 // Enhanced security headers configuration
-export const securityHeaders = helmet({
+exports.securityHeaders = (0, helmet_1.default)({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
@@ -43,7 +49,7 @@ export const securityHeaders = helmet({
     hidePoweredBy: true
 });
 // Enhanced CORS configuration
-export const corsConfig = cors({
+exports.corsConfig = (0, cors_1.default)({
     origin: (origin, callback) => {
         const allowedOrigins = [
             'http://localhost:3000',
@@ -80,8 +86,8 @@ export const corsConfig = cors({
     maxAge: 86400 // 24 hours
 });
 // Advanced rate limiting configurations
-export const createRateLimit = (windowMs, max, message) => {
-    return rateLimit({
+const createRateLimit = (windowMs, max, message) => {
+    return (0, express_rate_limit_1.default)({
         windowMs,
         max,
         message: {
@@ -110,21 +116,22 @@ export const createRateLimit = (windowMs, max, message) => {
         }
     });
 };
+exports.createRateLimit = createRateLimit;
 // Rate limiting configurations
-export const generalRateLimit = createRateLimit(15 * 60 * 1000, // 15 minutes
+exports.generalRateLimit = (0, exports.createRateLimit)(15 * 60 * 1000, // 15 minutes
 100, // 100 requests per window
 'Too many requests from this IP, please try again later.');
-export const authRateLimit = createRateLimit(15 * 60 * 1000, // 15 minutes
+exports.authRateLimit = (0, exports.createRateLimit)(15 * 60 * 1000, // 15 minutes
 5, // 5 auth attempts per window
 'Too many authentication attempts, please try again later.');
-export const apiRateLimit = createRateLimit(60 * 1000, // 1 minute
+exports.apiRateLimit = (0, exports.createRateLimit)(60 * 1000, // 1 minute
 30, // 30 requests per minute
 'API rate limit exceeded, please slow down your requests.');
-export const strictRateLimit = createRateLimit(60 * 1000, // 1 minute
+exports.strictRateLimit = (0, exports.createRateLimit)(60 * 1000, // 1 minute
 10, // 10 requests per minute
 'Strict rate limit exceeded, please wait before making more requests.');
 // Input validation and sanitization
-export const sanitizeInput = (req, res, next) => {
+const sanitizeInput = (req, res, next) => {
     // Recursively sanitize all string inputs
     const sanitizeObject = (obj) => {
         if (typeof obj === 'string') {
@@ -149,8 +156,9 @@ export const sanitizeInput = (req, res, next) => {
     req.params = sanitizeObject(req.params);
     next();
 };
+exports.sanitizeInput = sanitizeInput;
 // SQL injection protection
-export const sqlInjectionProtection = (req, res, next) => {
+const sqlInjectionProtection = (req, res, next) => {
     const sqlPatterns = [
         /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|UNION|SCRIPT)\b)/gi,
         /(\b(OR|AND)\s+\d+\s*=\s*\d+)/gi,
@@ -195,8 +203,9 @@ export const sqlInjectionProtection = (req, res, next) => {
     }
     next();
 };
+exports.sqlInjectionProtection = sqlInjectionProtection;
 // XSS protection
-export const xssProtection = (req, res, next) => {
+const xssProtection = (req, res, next) => {
     const xssPatterns = [
         /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi,
         /<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi,
@@ -239,8 +248,9 @@ export const xssProtection = (req, res, next) => {
     }
     next();
 };
+exports.xssProtection = xssProtection;
 // Request size limiting
-export const requestSizeLimit = (maxSize) => {
+const requestSizeLimit = (maxSize) => {
     return (req, res, next) => {
         const contentLength = parseInt(req.headers['content-length'] || '0');
         const maxBytes = parseInt(maxSize.replace(/\D/g, '')) * (maxSize.includes('mb') ? 1024 * 1024 : 1024);
@@ -254,8 +264,9 @@ export const requestSizeLimit = (maxSize) => {
         next();
     };
 };
+exports.requestSizeLimit = requestSizeLimit;
 // Security logging middleware
-export const securityLogger = (req, res, next) => {
+const securityLogger = (req, res, next) => {
     const startTime = Date.now();
     const authReq = req;
     res.on('finish', () => {
@@ -281,8 +292,9 @@ export const securityLogger = (req, res, next) => {
     });
     next();
 };
+exports.securityLogger = securityLogger;
 // CSRF protection
-export const csrfProtection = (req, res, next) => {
+const csrfProtection = (req, res, next) => {
     if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') {
         return next();
     }
@@ -297,12 +309,13 @@ export const csrfProtection = (req, res, next) => {
     }
     next();
 };
+exports.csrfProtection = csrfProtection;
 // Enhanced validation middleware
-export const validateRequest = (validations) => {
+const validateRequest = (validations) => {
     return async (req, res, next) => {
         try {
             await Promise.all(validations.map(validation => validation.run(req)));
-            const errors = validationResult(req);
+            const errors = (0, express_validator_1.validationResult)(req);
             if (!errors.isEmpty()) {
                 res.status(400).json({
                     error: 'Validation failed',
@@ -317,12 +330,13 @@ export const validateRequest = (validations) => {
             next();
         }
         catch (error) {
-            next(createError('Validation error', 400));
+            next((0, errorHandler_1.createError)('Validation error', 400));
         }
     };
 };
+exports.validateRequest = validateRequest;
 // IP whitelist middleware
-export const ipWhitelist = (allowedIPs) => {
+const ipWhitelist = (allowedIPs) => {
     return (req, res, next) => {
         const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
         if (allowedIPs.length > 0 && !allowedIPs.includes(clientIP)) {
@@ -336,8 +350,9 @@ export const ipWhitelist = (allowedIPs) => {
         next();
     };
 };
+exports.ipWhitelist = ipWhitelist;
 // Request timeout middleware
-export const requestTimeout = (timeoutMs) => {
+const requestTimeout = (timeoutMs) => {
     return (req, res, next) => {
         const timeout = setTimeout(() => {
             if (!res.headersSent) {
@@ -352,8 +367,9 @@ export const requestTimeout = (timeoutMs) => {
         next();
     };
 };
+exports.requestTimeout = requestTimeout;
 // Security headers for API responses
-export const securityResponseHeaders = (req, res, next) => {
+const securityResponseHeaders = (req, res, next) => {
     res.set({
         'X-Content-Type-Options': 'nosniff',
         'X-Frame-Options': 'DENY',
@@ -367,4 +383,5 @@ export const securityResponseHeaders = (req, res, next) => {
     });
     next();
 };
+exports.securityResponseHeaders = securityResponseHeaders;
 //# sourceMappingURL=security.js.map

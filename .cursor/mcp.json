@@ -1,35 +1,14 @@
 {
   "mcpServers": {
-    "tracechain-project": {
+    "tracechain-unified": {
       "command": "node",
-      "args": ["./mcp-server.js"],
+      "args": ["./mcp-server-unified.js"],
       "env": {
         "PROJECT_ROOT": "/Users/partha/Work/web3-dream",
-        "NODE_ENV": "development"
-      }
-    },
-    "smart-contract-analyzer": {
-      "command": "npx",
-      "args": ["@hardhat/console", "--network", "localhost"],
-      "env": {
-        "HARDHAT_NETWORK": "localhost",
-        "CONTRACT_PATH": "./smart-contracts"
-      }
-    },
-    "api-validator": {
-      "command": "node",
-      "args": ["./backend/src/scripts/mcp-api-validator.js"],
-      "env": {
-        "API_BASE_URL": "http://localhost:3000",
-        "DATABASE_URL": "postgresql://tracechain_user:tracechain_password@localhost:5432/tracechain_db"
-      }
-    },
-    "security-scanner": {
-      "command": "npx",
-      "args": ["@snyk/cli", "monitor"],
-      "env": {
-        "SNYK_TOKEN": "${SNYK_TOKEN}",
-        "PROJECT_PATH": "/Users/partha/Work/web3-dream"
+        "NODE_ENV": "development",
+        "LINEAR_API_KEY": "your_linear_api_key_here",
+        "LINEAR_TEAM_ID": "9b0fb88f-c6f6-4a15-b952-af836c4a25c4",
+        "LINEAR_WORKSPACE_ID": "9b04d949-3b86-4be2-bda3-2ec7af31b701"
       }
     }
   }

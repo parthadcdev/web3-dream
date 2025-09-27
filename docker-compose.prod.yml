@@ -9,7 +9,7 @@ services:
     environment:
       NODE_ENV: production
       LOG_LEVEL: warn
-      DATABASE_URL: postgresql://tracechain_user:tracechain_password@postgres:5432/tracechain_db
+      DATABASE_URL: ${DATABASE_URL}
       REDIS_URL: redis://redis:6379
       JWT_SECRET: ${JWT_SECRET:-tracechain-jwt-secret-production}
       JWT_EXPIRES_IN: 24h
@@ -42,19 +42,7 @@ services:
         reservations:
           memory: 1G
 
-  # PostgreSQL - Production configuration
-  postgres:
-    environment:
-      POSTGRES_DB: tracechain_db
-      POSTGRES_USER: tracechain_user
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tracechain_password_production}
-    restart: unless-stopped
-    deploy:
-      resources:
-        limits:
-          memory: 1G
-        reservations:
-          memory: 512M
+  # PostgreSQL removed - using Neon database
 
   # Redis - Production configuration
   redis:

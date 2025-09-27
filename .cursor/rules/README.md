@@ -8,15 +8,19 @@ This directory contains Cursor rules that help with development, code navigation
 - **[project-structure.mdc](project-structure.mdc)** - Project architecture and file organization
 - **[mcp-integration.mdc](mcp-integration.mdc)** - MCP server tools and Git automation
 - **[git-workflow.mdc](git-workflow.mdc)** - Git workflow and branching strategy
-- **[security-patterns.mdc](security-patterns.mdc)** - Security best practices
+- **[security-patterns.mdc](security-patterns.mdc)** - Security best practices and multi-provider authentication
 - **[linear-integration.mdc](linear-integration.mdc)** - Linear issue tracking integration
 - **[development-workflow.mdc](development-workflow.mdc)** - Daily development practices
+- **[database-neon.mdc](database-neon.mdc)** - Neon PostgreSQL database configuration
 
 ### File-Specific Rules
 - **[typescript-patterns.mdc](typescript-patterns.mdc)** - TypeScript coding patterns (*.ts, *.tsx)
 - **[smart-contracts.mdc](smart-contracts.mdc)** - Solidity contract patterns (*.sol)
 - **[docker-deployment.mdc](docker-deployment.mdc)** - Docker and deployment patterns
 - **[testing-patterns.mdc](testing-patterns.mdc)** - Testing conventions and patterns
+- **[backend-api.mdc](backend-api.mdc)** - Backend API development patterns (*.ts, *.js)
+- **[frontend-react.mdc](frontend-react.mdc)** - Frontend React patterns (*.tsx, *.jsx)
+- **[stytch-authentication.mdc](stytch-authentication.mdc)** - Stytch identity provider integration
 
 ## How to Use
 
@@ -33,6 +37,12 @@ These rules are automatically applied by Cursor based on:
 - Linear issue integration
 - Security scanning tools
 - Build and deployment tools
+
+### Authentication & Database
+- Multi-provider authentication (Email/Password, Stytch, Web3)
+- Neon PostgreSQL database configuration
+- User registration and management
+- Security patterns and best practices
 
 ### Development Patterns
 - TypeScript error handling

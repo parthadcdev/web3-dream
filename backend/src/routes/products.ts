@@ -1,8 +1,8 @@
 import { Router } from 'express';
 import { body, validationResult, query } from 'express-validator';
 import { Request, Response } from 'express';
-import { AuthRequest } from '../middleware/auth.js';
-import { asyncHandler } from '../middleware/errorHandler.js';
+import { AuthRequest } from '../middleware/auth';
+import { asyncHandler } from '../middleware/errorHandler';
 import { 
   requireResourcePermission, 
   requireOwnership, 
@@ -10,12 +10,12 @@ import {
   UserRole,
   Resource,
   Permission
-} from '../middleware/authorization.js';
+} from '../middleware/authorization';
 import { 
   validate, 
   sanitize, 
   validationGroups 
-} from '../middleware/validation.js';
+} from '../middleware/validation';
 
 const router = Router();
 

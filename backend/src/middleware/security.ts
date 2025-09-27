@@ -3,8 +3,8 @@ import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import cors from 'cors';
 import { body, validationResult, ValidationChain } from 'express-validator';
-import { createError } from './errorHandler.js';
-import { AuthRequest } from './auth.js';
+import { createError } from './errorHandler';
+import { AuthRequest } from './auth';
 
 // Enhanced security headers configuration
 export const securityHeaders = helmet({

@@ -52,7 +52,7 @@ A comprehensive, affordable, and user-friendly decentralized traceability platfo
 ┌─────────────────────────────────────────────────────────┐
 │                   Data & Storage Layer                  │
 ├─────────────────────────────────────────────────────────┤
-│  IPFS/Arweave             │  PostgreSQL (Off-chain)     │
+│  IPFS/Arweave             │  Neon PostgreSQL (Serverless) │
 │  Redis Cache              │  IoT Data Lakes             │
 │  Backup & Recovery        │  CDN for Assets             │
 └─────────────────────────────────────────────────────────┘
@@ -70,7 +70,7 @@ A comprehensive, affordable, and user-friendly decentralized traceability platfo
 ### Backend
 - **Runtime**: Node.js 18+ with TypeScript
 - **Framework**: Express.js with comprehensive middleware
-- **Database**: PostgreSQL 14+ with Prisma ORM
+- **Database**: Neon PostgreSQL (serverless) with Prisma ORM
 - **Cache**: Redis 7+ for session and query caching
 - **Message Queue**: Bull Queue for background job processing
 
@@ -131,7 +131,8 @@ web3-dream/
 
 ### Prerequisites
 - Node.js 18+ and npm/yarn
-- Docker and Docker Compose
+- Neon PostgreSQL account (free tier available)
+- Redis (local or cloud)
 - MetaMask wallet
 - Git
 
@@ -158,29 +159,59 @@ web3-dream/
    npm install
    ```
 
-3. **Set up environment variables**
+3. **Set up Neon database**
+   ```bash
+   # Follow the Neon setup guide
+   ./scripts/setup-neon.sh
+   
+   # Or use MCP tools to create a new TraceChain project
+   # Project Name: tracechain
+   # Database Name: tracechain_db
+   ```
+
+4. **Set up environment variables**
    ```bash
    # Copy environment templates
-   cp backend/.env.example backend/.env
+   cp backend/env.example backend/.env
    cp frontend/.env.example frontend/.env
    cp smart-contracts/.env.example smart-contracts/.env
+   
+   # Update DATABASE_URL in backend/.env with your Neon connection string
+   # Example: postgresql://neondb_owner:password@ep-xxx.us-west-2.aws.neon.tech/tracechain_db?sslmode=require
    ```
 
-4. **Start local development environment**
+5. **Start local development environment**
    ```bash
-   # Start all services with Docker Compose
-   docker-compose up -d
+   # Start all services
+   ./run-app.sh
 
    # Or start individual services
-   npm run dev:backend    # Backend API
-   npm run dev:frontend   # Frontend app
-   npm run dev:contracts  # Smart contract testing
+   ./run-app.sh backend    # Backend API
+   ./run-app.sh frontend   # Frontend app
+   ./run-app.sh smart-contracts  # Smart contract testing
    ```
 
-5. **Access the application**
-   - Frontend: http://localhost:3000
-   - Backend API: http://localhost:8000
-   - API Documentation: http://localhost:8000/docs
+6. **Access the application**
+   - Frontend: http://localhost:3001
+   - Backend API: http://localhost:3000
+   - API Documentation: http://localhost:3000/api/health
+   - Database Health: http://localhost:3000/api/database/health
+   - Prisma Studio: `npx prisma studio` (opens in browser)
+
+7. **Database Setup Commands**
+   ```bash
+   # Generate Prisma client
+   npx prisma generate
+   
+   # Run database migrations
+   npx prisma migrate dev
+   
+   # Seed database with sample data
+   npx prisma db seed
+   
+   # Open Prisma Studio for database management
+   npx prisma studio
+   ```
 
 ### Smart Contract Development
 

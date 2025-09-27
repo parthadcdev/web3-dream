@@ -1,13 +1,13 @@
 import { Router } from 'express';
 import { Request, Response } from 'express';
-import { AuthRequest } from '../middleware/auth.js';
-import { asyncHandler } from '../middleware/errorHandler.js';
+import { AuthRequest } from '../middleware/auth';
+import { asyncHandler } from '../middleware/errorHandler';
 import { 
   requireRole,
   UserRole,
   Permission,
   Resource
-} from '../middleware/authorization.js';
+} from '../middleware/authorization';
 import { 
   getSecurityDashboard,
   getSecurityMetrics,
@@ -15,7 +15,7 @@ import {
   logSecurityEvent,
   SecurityEventType,
   cleanupSecurityEvents
-} from '../middleware/security-monitoring.js';
+} from '../middleware/security-monitoring';
 
 const router = Router();
 

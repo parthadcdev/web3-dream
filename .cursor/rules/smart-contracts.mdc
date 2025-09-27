@@ -1,40 +1,249 @@
 ---
-globs: *.sol
-description: Solidity smart contract patterns and conventions
+globs: *.sol,hardhat.config.js
+description: Smart contract development patterns
 ---
 
 # Smart Contract Patterns for TraceChain
 
 ## Contract Structure
-- Use OpenZeppelin contracts for security and standards
-- Implement proper access control with `Ownable` and `Pausable`
-- Use `ReentrancyGuard` for functions that handle external calls
-- Follow the established patterns in [smart-contracts/contracts/](mdc:smart-contracts/contracts/)
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.19;
 
-## Key Contracts
-- **NFTCertificate**: [smart-contracts/contracts/NFTCertificate.sol](mdc:smart-contracts/contracts/NFTCertificate.sol) - NFT certificates for product traceability
-- **NFTFactory**: [smart-contracts/contracts/NFTFactory.sol](mdc:smart-contracts/contracts/NFTFactory.sol) - Factory for creating NFT instances
-- **ProductRegistry**: Core product registration and tracking
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/Counters.sol";
+
+contract ProductRegistry is Ownable, ReentrancyGuard {
+    using Counters for Counters.Counter;
+    
+    // Events
+    event ProductRegistered(uint256 indexed productId, address indexed manufacturer);
+    event CheckpointAdded(uint256 indexed productId, string location, uint256 timestamp);
+    
+    // State variables
+    Counters.Counter private _productIds;
+    mapping(uint256 => Product) private products;
+    
+    // Structs
+    struct Product {
+        uint256 id;
+        string name;
+        string description;
+        address manufacturer;
+        uint256 createdAt;
+        bool isActive;
+    }
+    
+    // Modifiers
+    modifier onlyActiveProduct(uint256 _productId) {
+        require(products[_productId].isActive, "Product is not active");
+        _;
+    }
+    
+    // Functions
+    function registerProduct(
+        string memory _name,
+        string memory _description
+    ) external returns (uint256) {
+        _productIds.increment();
+        uint256 newProductId = _productIds.current();
+        
+        products[newProductId] = Product({
+            id: newProductId,
+            name: _name,
+            description: _description,
+            manufacturer: msg.sender,
+            createdAt: block.timestamp,
+            isActive: true
+        });
+        
+        emit ProductRegistered(newProductId, msg.sender);
+        return newProductId;
+    }
+}
+```
 
 ## Security Patterns
-- Always validate inputs with `require()` statements
-- Use `modifier` for access control
-- Implement proper event emission for transparency
-- Use `whenNotPaused` modifier for emergency stops
+```solidity
+// Access control
+import "@openzeppelin/contracts/access/AccessControl.sol";
+
+contract SecureContract is AccessControl {
+    bytes32 public constant MANUFACTURER_ROLE = keccak256("MANUFACTURER_ROLE");
+    bytes32 public constant RETAILER_ROLE = keccak256("RETAILER_ROLE");
+    
+    constructor() {
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+    }
+    
+    modifier onlyManufacturer() {
+        require(hasRole(MANUFACTURER_ROLE, msg.sender), "Not a manufacturer");
+        _;
+    }
+}
+
+// Reentrancy protection
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+
+contract PaymentContract is ReentrancyGuard {
+    function processPayment(address payable recipient) 
+        external 
+        payable 
+        nonReentrant 
+    {
+        // Payment logic
+        recipient.transfer(msg.value);
+    }
+}
+```
 
 ## Gas Optimization
-- Use `view` and `pure` functions where possible
-- Avoid loops in external functions
-- Use `storage` vs `memory` appropriately
-- Consider contract size limits (24KB)
+```solidity
+// Use packed structs for gas efficiency
+struct Product {
+    uint128 id;        // Packed with nameHash
+    uint128 nameHash;
+    address manufacturer; // 20 bytes
+    uint32 createdAt;    // Packed with status
+    uint8 status;        // 0=inactive, 1=active, 2=sold
+}
 
-## Testing
-- Write comprehensive tests in [smart-contracts/test/](mdc:smart-contracts/test/)
-- Use Hardhat testing framework
-- Test all access control scenarios
-- Verify gas usage and optimization
+// Use events for data that doesn't need on-chain storage
+event ProductCheckpoint(
+    uint256 indexed productId,
+    string location,
+    uint256 timestamp,
+    string metadata
+);
+```
 
-## Deployment
-- Use Hardhat deployment scripts in [smart-contracts/scripts/](mdc:smart-contracts/scripts/)
-- Support multiple networks (localhost, mumbai, polygon)
-- Implement proper contract verification
+## Error Handling
+```solidity
+// Custom errors (more gas efficient than require strings)
+error ProductNotFound(uint256 productId);
+error UnauthorizedAccess(address caller);
+error InvalidStatus(uint8 currentStatus, uint8 requiredStatus);
+
+function getProduct(uint256 _productId) external view returns (Product memory) {
+    if (!products[_productId].isActive) {
+        revert ProductNotFound(_productId);
+    }
+    return products[_productId];
+}
+```
+
+## Upgradeable Contracts
+```solidity
+// Use OpenZeppelin upgradeable contracts
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+
+contract UpgradeableRegistry is Initializable, OwnableUpgradeable {
+    function initialize() public initializer {
+        __Ownable_init();
+    }
+    
+    function version() public pure returns (string memory) {
+        return "1.0.0";
+    }
+}
+```
+
+## Testing Patterns
+```javascript
+// Hardhat test structure
+const { expect } = require("chai");
+const { ethers } = require("hardhat");
+
+describe("ProductRegistry", function () {
+  let productRegistry;
+  let owner, manufacturer, retailer;
+  
+  beforeEach(async function () {
+    [owner, manufacturer, retailer] = await ethers.getSigners();
+    
+    const ProductRegistry = await ethers.getContractFactory("ProductRegistry");
+    productRegistry = await ProductRegistry.deploy();
+    await productRegistry.deployed();
+  });
+  
+  it("Should register a product", async function () {
+    const tx = await productRegistry
+      .connect(manufacturer)
+      .registerProduct("Test Product", "Test Description");
+      
+    await expect(tx)
+      .to.emit(productRegistry, "ProductRegistered")
+      .withArgs(1, manufacturer.address);
+  });
+});
+```
+
+## Deployment Scripts
+```javascript
+// scripts/deploy.js
+async function main() {
+  const [deployer] = await ethers.getSigners();
+  
+  console.log("Deploying contracts with account:", deployer.address);
+  console.log("Account balance:", (await deployer.getBalance()).toString());
+  
+  // Deploy ProductRegistry
+  const ProductRegistry = await ethers.getContractFactory("ProductRegistry");
+  const productRegistry = await ProductRegistry.deploy();
+  await productRegistry.deployed();
+  
+  console.log("ProductRegistry deployed to:", productRegistry.address);
+  
+  // Verify contract
+  if (network.name !== "hardhat") {
+    await hre.run("verify:verify", {
+      address: productRegistry.address,
+      constructorArguments: [],
+    });
+  }
+}
+
+main()
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
+```
+
+## Hardhat Configuration
+```javascript
+// hardhat.config.js
+require("@nomicfoundation/hardhat-toolbox");
+require("dotenv").config();
+
+module.exports = {
+  solidity: {
+    version: "0.8.19",
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 200
+      }
+    }
+  },
+  networks: {
+    hardhat: {
+      chainId: 1337
+    },
+    polygon: {
+      url: process.env.POLYGON_RPC_URL,
+      accounts: [process.env.PRIVATE_KEY]
+    },
+    mumbai: {
+      url: process.env.MUMBAI_RPC_URL,
+      accounts: [process.env.PRIVATE_KEY]
+    }
+  },
+  etherscan: {
+    apiKey: process.env.POLYGONSCAN_API_KEY
+  }
+};
+```

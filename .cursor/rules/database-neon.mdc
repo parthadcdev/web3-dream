@@ -1,0 +1,66 @@
+---
+alwaysApply: true
+description: Database configuration and Neon PostgreSQL setup
+---
+
+# Neon Database Configuration
+
+## Database Setup
+TraceChain uses **Neon PostgreSQL** (serverless) instead of local PostgreSQL:
+
+- **Database**: Neon PostgreSQL with Prisma ORM
+- **Schema**: [backend/prisma/schema.prisma](mdc:backend/prisma/schema.prisma)
+- **Configuration**: [backend/src/config/database.ts](mdc:backend/src/config/database.ts)
+- **Setup Script**: [scripts/setup-neon.sh](mdc:scripts/setup-neon.sh)
+
+## Environment Variables
+```env
+# Neon PostgreSQL Connection
+DATABASE_URL="postgresql://neondb_owner:password@ep-xxx-xxx.us-west-2.aws.neon.tech/tracechain_db?channel_binding=require&sslmode=require"
+
+# Database Configuration
+DB_HOST=ep-xxx-xxx.us-west-2.aws.neon.tech
+DB_PORT=5432
+DB_NAME=tracechain_db
+DB_USER=neondb_owner
+DB_PASSWORD=your_password_here
+```
+
+## Database Schema
+The database includes the following models:
+- **User**: User management with roles and authentication
+- **Product**: Product tracking and metadata
+- **Checkpoint**: Supply chain checkpoints
+- **NFTCertificate**: NFT-based certificates
+- **AuditLog**: Security and audit logging
+- **SecurityEvent**: Security monitoring
+- **TokenTransaction**: Token economy transactions
+- **ComplianceStandard**: Compliance standards
+
+## Database Operations
+- **Migrations**: `npx prisma migrate dev`
+- **Seeding**: `npm run db:seed`
+- **Studio**: `npx prisma studio`
+- **Health Check**: `GET /api/database/health`
+- **Generate Client**: `npx prisma generate`
+
+## Connection Issues
+If you encounter database connection errors:
+1. **Check Environment**: Ensure `.env` file exists with correct `DATABASE_URL`
+2. **Verify Credentials**: Confirm Neon database credentials are correct
+3. **SSL Requirements**: Neon requires SSL connections
+4. **Network Access**: Ensure your IP is whitelisted in Neon console
+
+## Setup Process
+1. **Create Neon Project**: Visit [console.neon.tech](https://console.neon.tech)
+2. **Get Connection String**: Copy the connection string from Neon dashboard
+3. **Update .env**: Set `DATABASE_URL` in `backend/.env`
+4. **Run Migration**: `npx prisma migrate dev --name init`
+5. **Seed Database**: `npm run db:seed`
+
+## Important Notes
+- No local PostgreSQL container needed
+- SSL required for Neon connections
+- Automatic backups and scaling
+- Use Prisma for all database operations
+- Database connection is required for user registration and authentication

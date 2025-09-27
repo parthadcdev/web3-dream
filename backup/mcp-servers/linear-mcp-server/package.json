@@ -1,0 +1,27 @@
+{
+  "name": "linear-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server for Linear integration with AI agents",
+  "main": "working-linear-server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node working-linear-server.js",
+    "dev": "node --watch working-linear-server.js",
+    "test": "node test-server.js",
+    "test:manual": "echo '{\"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"tools/list\", \"params\": {}}' | node working-linear-server.js"
+  },
+  "keywords": [
+    "linear",
+    "mcp",
+    "ai",
+    "agents",
+    "project-management"
+  ],
+  "author": "TraceChain Team",
+  "license": "MIT",
+  "dependencies": {
+    "@linear/sdk": "^60.0.0",
+    "@modelcontextprotocol/sdk": "^1.18.2",
+    "dotenv": "^16.6.1"
+  }
+}

@@ -1,6 +1,6 @@
 import { body, param, query, validationResult, ValidationChain } from 'express-validator';
 import { Request, Response, NextFunction } from 'express';
-import { createError } from './errorHandler.js';
+import { createError } from './errorHandler';
 
 // Common validation patterns
 export const patterns = {

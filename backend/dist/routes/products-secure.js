@@ -1,13 +1,15 @@
-import { Router } from 'express';
-import { asyncHandler } from '../middleware/errorHandler.js';
-import { requireResourcePermission, requireOwnership, auditLog, Resource, Permission } from '../middleware/authorization.js';
-import { validate, sanitize, validationGroups } from '../middleware/validation.js';
-const router = Router();
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const errorHandler_js_1 = require("../middleware/errorHandler.js");
+const authorization_js_1 = require("../middleware/authorization.js");
+const validation_js_1 = require("../middleware/validation.js");
+const router = (0, express_1.Router)();
 // Mock database for demonstration
 let products = [];
 let checkpoints = [];
 // Get all products for authenticated user
-router.get('/', validate(validationGroups.product.query), sanitize, requireResourcePermission(Resource.PRODUCT, Permission.READ), auditLog('product_list', Resource.PRODUCT), asyncHandler(async (req, res) => {
+router.get('/', (0, validation_js_1.validate)(validation_js_1.validationGroups.product.query), validation_js_1.sanitize, (0, authorization_js_1.requireResourcePermission)(authorization_js_1.Resource.PRODUCT, authorization_js_1.Permission.READ), (0, authorization_js_1.auditLog)('product_list', authorization_js_1.Resource.PRODUCT), (0, errorHandler_js_1.asyncHandler)(async (req, res) => {
     const { page = 1, limit = 10, type, status, search } = req.query;
     const userId = req.user?.id;
     // Filter products based on user permissions
@@ -40,11 +42,11 @@ router.get('/', validate(validationGroups.product.query), sanitize, requireResou
     });
 }));
 // Get specific product by ID
-router.get('/:id', validate([validationGroups.product.update[0]]), // Validate ID parameter
-sanitize, requireResourcePermission(Resource.PRODUCT, Permission.READ), requireOwnership((req) => {
+router.get('/:id', (0, validation_js_1.validate)([validation_js_1.validationGroups.product.update[0]]), // Validate ID parameter
+validation_js_1.sanitize, (0, authorization_js_1.requireResourcePermission)(authorization_js_1.Resource.PRODUCT, authorization_js_1.Permission.READ), (0, authorization_js_1.requireOwnership)((req) => {
     const product = products.find(p => p.id === req.params.id);
     return product?.ownerId || '';
-}), auditLog('product_view', Resource.PRODUCT), asyncHandler(async (req, res) => {
+}), (0, authorization_js_1.auditLog)('product_view', authorization_js_1.Resource.PRODUCT), (0, errorHandler_js_1.asyncHandler)(async (req, res) => {
     const { id } = req.params;
     const userId = req.user?.id;
     const product = products.find(p => p.id === id);
@@ -64,7 +66,7 @@ sanitize, requireResourcePermission(Resource.PRODUCT, Permission.READ), requireO
     });
 }));
 // Register new product
-router.post('/', validate(validationGroups.product.create), sanitize, requireResourcePermission(Resource.PRODUCT, Permission.WRITE), auditLog('product_create', Resource.PRODUCT), asyncHandler(async (req, res) => {
+router.post('/', (0, validation_js_1.validate)(validation_js_1.validationGroups.product.create), validation_js_1.sanitize, (0, authorization_js_1.requireResourcePermission)(authorization_js_1.Resource.PRODUCT, authorization_js_1.Permission.WRITE), (0, authorization_js_1.auditLog)('product_create', authorization_js_1.Resource.PRODUCT), (0, errorHandler_js_1.asyncHandler)(async (req, res) => {
     const userId = req.user?.id;
     const { name, type, batchNumber, manufactureDate, expiryDate, rawMaterials, metadataURI, description } = req.body;
     // Check if batch number already exists
@@ -98,10 +100,10 @@ router.post('/', validate(validationGroups.product.create), sanitize, requireRes
     });
 }));
 // Update product
-router.put('/:id', validate([...validationGroups.product.update, ...validationGroups.product.create.slice(1)]), sanitize, requireResourcePermission(Resource.PRODUCT, Permission.WRITE), requireOwnership((req) => {
+router.put('/:id', (0, validation_js_1.validate)([...validation_js_1.validationGroups.product.update, ...validation_js_1.validationGroups.product.create.slice(1)]), validation_js_1.sanitize, (0, authorization_js_1.requireResourcePermission)(authorization_js_1.Resource.PRODUCT, authorization_js_1.Permission.WRITE), (0, authorization_js_1.requireOwnership)((req) => {
     const product = products.find(p => p.id === req.params.id);
     return product?.ownerId || '';
-}), auditLog('product_update', Resource.PRODUCT), asyncHandler(async (req, res) => {
+}), (0, authorization_js_1.auditLog)('product_update', authorization_js_1.Resource.PRODUCT), (0, errorHandler_js_1.asyncHandler)(async (req, res) => {
     const { id } = req.params;
     const userId = req.user?.id;
     const productIndex = products.findIndex(p => p.id === id);
@@ -126,10 +128,10 @@ router.put('/:id', validate([...validationGroups.product.update, ...validationGr
     });
 }));
 // Delete product (soft delete)
-router.delete('/:id', validate([validationGroups.product.update[0]]), sanitize, requireResourcePermission(Resource.PRODUCT, Permission.DELETE), requireOwnership((req) => {
+router.delete('/:id', (0, validation_js_1.validate)([validation_js_1.validationGroups.product.update[0]]), validation_js_1.sanitize, (0, authorization_js_1.requireResourcePermission)(authorization_js_1.Resource.PRODUCT, authorization_js_1.Permission.DELETE), (0, authorization_js_1.requireOwnership)((req) => {
     const product = products.find(p => p.id === req.params.id);
     return product?.ownerId || '';
-}), auditLog('product_delete', Resource.PRODUCT), asyncHandler(async (req, res) => {
+}), (0, authorization_js_1.auditLog)('product_delete', authorization_js_1.Resource.PRODUCT), (0, errorHandler_js_1.asyncHandler)(async (req, res) => {
     const { id } = req.params;
     const productIndex = products.findIndex(p => p.id === id);
     if (productIndex === -1) {
@@ -147,10 +149,10 @@ router.delete('/:id', validate([validationGroups.product.update[0]]), sanitize, 
     });
 }));
 // Add checkpoint to product
-router.post('/:id/checkpoints', validate([validationGroups.checkpoint.create[0], ...validationGroups.checkpoint.create.slice(1)]), sanitize, requireResourcePermission(Resource.PRODUCT, Permission.WRITE), requireOwnership((req) => {
+router.post('/:id/checkpoints', (0, validation_js_1.validate)([validation_js_1.validationGroups.checkpoint.create[0], ...validation_js_1.validationGroups.checkpoint.create.slice(1)]), validation_js_1.sanitize, (0, authorization_js_1.requireResourcePermission)(authorization_js_1.Resource.PRODUCT, authorization_js_1.Permission.WRITE), (0, authorization_js_1.requireOwnership)((req) => {
     const product = products.find(p => p.id === req.params.id);
     return product?.ownerId || '';
-}), auditLog('checkpoint_create', Resource.PRODUCT), asyncHandler(async (req, res) => {
+}), (0, authorization_js_1.auditLog)('checkpoint_create', authorization_js_1.Resource.PRODUCT), (0, errorHandler_js_1.asyncHandler)(async (req, res) => {
     const { id } = req.params;
     const userId = req.user?.id;
     const { status, location, additionalData, temperature, humidity } = req.body;
@@ -179,10 +181,10 @@ router.post('/:id/checkpoints', validate([validationGroups.checkpoint.create[0],
     });
 }));
 // Get checkpoints for product
-router.get('/:id/checkpoints', validate([validationGroups.product.update[0]]), sanitize, requireResourcePermission(Resource.PRODUCT, Permission.READ), requireOwnership((req) => {
+router.get('/:id/checkpoints', (0, validation_js_1.validate)([validation_js_1.validationGroups.product.update[0]]), validation_js_1.sanitize, (0, authorization_js_1.requireResourcePermission)(authorization_js_1.Resource.PRODUCT, authorization_js_1.Permission.READ), (0, authorization_js_1.requireOwnership)((req) => {
     const product = products.find(p => p.id === req.params.id);
     return product?.ownerId || '';
-}), auditLog('checkpoint_list', Resource.PRODUCT), asyncHandler(async (req, res) => {
+}), (0, authorization_js_1.auditLog)('checkpoint_list', authorization_js_1.Resource.PRODUCT), (0, errorHandler_js_1.asyncHandler)(async (req, res) => {
     const { id } = req.params;
     const productCheckpoints = checkpoints.filter(cp => cp.productId === id);
     res.json({
@@ -190,7 +192,7 @@ router.get('/:id/checkpoints', validate([validationGroups.product.update[0]]), s
     });
 }));
 // Verify product
-router.post('/:id/verify', validate([validationGroups.product.update[0]]), sanitize, requireResourcePermission(Resource.PRODUCT, Permission.VERIFY), auditLog('product_verify', Resource.PRODUCT), asyncHandler(async (req, res) => {
+router.post('/:id/verify', (0, validation_js_1.validate)([validation_js_1.validationGroups.product.update[0]]), validation_js_1.sanitize, (0, authorization_js_1.requireResourcePermission)(authorization_js_1.Resource.PRODUCT, authorization_js_1.Permission.VERIFY), (0, authorization_js_1.auditLog)('product_verify', authorization_js_1.Resource.PRODUCT), (0, errorHandler_js_1.asyncHandler)(async (req, res) => {
     const { id } = req.params;
     const userId = req.user?.id;
     const product = products.find(p => p.id === id);
@@ -214,7 +216,7 @@ router.post('/:id/verify', validate([validationGroups.product.update[0]]), sanit
     });
 }));
 // Get product statistics
-router.get('/stats/overview', requireResourcePermission(Resource.PRODUCT, Permission.READ), auditLog('product_stats', Resource.PRODUCT), asyncHandler(async (req, res) => {
+router.get('/stats/overview', (0, authorization_js_1.requireResourcePermission)(authorization_js_1.Resource.PRODUCT, authorization_js_1.Permission.READ), (0, authorization_js_1.auditLog)('product_stats', authorization_js_1.Resource.PRODUCT), (0, errorHandler_js_1.asyncHandler)(async (req, res) => {
     const userId = req.user?.id;
     // Calculate statistics based on user's products
     const userProducts = products.filter(p => p.ownerId === userId);
@@ -230,5 +232,5 @@ router.get('/stats/overview', requireResourcePermission(Resource.PRODUCT, Permis
     };
     res.json({ stats });
 }));
-export default router;
+exports.default = router;
 //# sourceMappingURL=products-secure.js.map

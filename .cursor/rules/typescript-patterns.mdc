@@ -1,45 +1,239 @@
 ---
 globs: *.ts,*.tsx
-description: TypeScript coding patterns and conventions for TraceChain
+description: TypeScript patterns and conventions
 ---
 
 # TypeScript Patterns for TraceChain
 
-## Error Handling
-Always use `globalThis.Error` instead of `Error` constructor to avoid TypeScript strict mode issues:
+## Code Style
+- **Semicolons**: Always use semicolons
+- **Quotes**: Use single quotes for strings, double quotes for JSX attributes
+- **Indentation**: 2 spaces
+- **Line Length**: Max 100 characters
+- **Trailing Commas**: Always include trailing commas in objects/arrays
 
+## Type Definitions
 ```typescript
-// ✅ Correct
-throw new globalThis.Error('Error message');
+// Interface definitions
+interface User {
+  id: string;
+  email: string;
+  role: 'admin' | 'manufacturer' | 'retailer' | 'consumer';
+  createdAt: Date;
+  updatedAt: Date;
+}
 
-// ❌ Avoid
-throw new Error('Error message');
+// API Response types
+interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  timestamp: string;
+}
+
+// Database model types (from Prisma)
+type UserWithRelations = User & {
+  products: Product[];
+  auditLogs: AuditLog[];
+};
 ```
 
-## API Response Patterns
-Use consistent error handling patterns in API calls:
-
+## Error Handling
 ```typescript
-if (!response.ok) {
-  const error = await response.json();
-  throw new globalThis.Error(error.error?.message || 'Operation failed');
+// Use try-catch with proper typing
+try {
+  const result = await someAsyncOperation();
+  return { success: true, data: result };
+} catch (error) {
+  const message = error instanceof Error ? error.message : 'Unknown error';
+  return { success: false, error: message };
+}
+
+// Custom error classes
+class ValidationError extends Error {
+  constructor(message: string, public field: string) {
+    super(message);
+    this.name = 'ValidationError';
+  }
+}
+
+// CRITICAL: TypeScript Compilation Fixes
+// Always use explicit return statements in async functions
+export const someRoute = async (req: Request, res: Response) => {
+  try {
+    // Do something
+    return res.json({ success: true });
+  } catch (error) {
+    return res.status(500).json({ error: 'Something went wrong' });
+  }
+  // NEVER omit return statements - causes TS7030 error
+};
+```
+
+## Async/Await Patterns
+```typescript
+// Always use async/await instead of promises
+async function fetchUser(id: string): Promise<User | null> {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id },
+      include: { products: true }
+    });
+    return user;
+  } catch (error) {
+    logger.error('Failed to fetch user:', error);
+    return null;
+  }
 }
 ```
 
-## Component Structure
-- Use Material-UI components consistently
-- Implement proper TypeScript interfaces for props
-- Use React hooks for state management
-- Follow the established Redux patterns in [frontend/src/store/](mdc:frontend/src/store/)
+## API Route Patterns
+```typescript
+// Express route handler with proper typing
+import { Request, Response } from 'express';
 
-## File Organization
-- Keep components in [frontend/src/components/](mdc:frontend/src/components/)
-- Store pages in [frontend/src/pages/](mdc:frontend/src/pages/)
-- Use contexts for global state in [frontend/src/contexts/](mdc:frontend/src/contexts/)
-- API types in [frontend/src/types/](mdc:frontend/src/types/)
+interface AuthenticatedRequest extends Request {
+  user?: User;
+}
 
-## Backend Patterns
-- Use Express.js with TypeScript in [backend/src/](mdc:backend/src/)
-- Implement proper middleware for authentication
-- Use JWT tokens for authentication
-- Follow RESTful API conventions
+export const getUser = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        error: 'User ID is required'
+      });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id }
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+
+    return res.json({
+      success: true,
+      data: user
+    });
+  } catch (error) {
+    logger.error('Error fetching user:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Internal server error'
+    });
+  }
+};
+
+// CRITICAL: Always use explicit return statements
+export const resetDatabase = async (req: Request, res: Response) => {
+  try {
+    if (process.env.NODE_ENV === 'production') {
+      return res.status(403).json({
+        error: 'Database reset not allowed in production'
+      });
+    }
+
+    await db.auditLog.deleteMany();
+    // ... other operations
+
+    return res.json({
+      message: 'Database reset successfully',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    return res.status(500).json({
+      error: 'Failed to reset database',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+};
+```
+
+## React Component Patterns
+```typescript
+// Functional components with TypeScript
+interface ProductCardProps {
+  product: Product;
+  onEdit?: (product: Product) => void;
+  onDelete?: (id: string) => void;
+}
+
+export const ProductCard: React.FC<ProductCardProps> = ({
+  product,
+  onEdit,
+  onDelete
+}) => {
+  const handleEdit = () => {
+    if (onEdit) {
+      onEdit(product);
+    }
+  };
+
+  return (
+    <Card>
+      <CardContent>
+        <Typography variant="h6">{product.name}</Typography>
+        <Typography variant="body2">{product.description}</Typography>
+      </CardContent>
+    </Card>
+  );
+};
+```
+
+## Import/Export Conventions
+```typescript
+// Named exports preferred
+export const { validateUser, createUser } = userService;
+
+// Default exports for main components
+export default ProductCard;
+
+// Import order
+import React from 'react';
+import { NextPage } from 'next';
+import { useRouter } from 'next/router';
+
+import { Product } from '@/types';
+import { apiService } from '@/services';
+import { logger } from '@/utils';
+```
+
+## Database Patterns
+```typescript
+// Prisma query patterns
+const products = await prisma.product.findMany({
+  where: {
+    manufacturerId: user.id,
+    status: 'active'
+  },
+  include: {
+    manufacturer: true,
+    checkpoints: {
+      orderBy: { createdAt: 'desc' }
+    }
+  },
+  orderBy: { createdAt: 'desc' }
+});
+
+// Transaction patterns
+await prisma.$transaction(async (tx) => {
+  const product = await tx.product.create({
+    data: productData
+  });
+  
+  await tx.checkpoint.create({
+    data: {
+      productId: product.id,
+      location: 'Manufacturing',
+      status: 'completed'
+    }
+  });
+});
+```

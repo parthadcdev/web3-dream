@@ -9,7 +9,7 @@ services:
     environment:
       NODE_ENV: staging
       LOG_LEVEL: info
-      DATABASE_URL: postgresql://tracechain_user:tracechain_password@postgres:5432/tracechain_db
+      DATABASE_URL: ${DATABASE_URL}
       REDIS_URL: redis://redis:6379
       JWT_SECRET: tracechain-jwt-secret-staging
       JWT_EXPIRES_IN: 24h
@@ -40,18 +40,7 @@ services:
         reservations:
           memory: 512M
 
-  # PostgreSQL - Staging configuration
-  postgres:
-    environment:
-      POSTGRES_DB: tracechain_db_staging
-      POSTGRES_USER: tracechain_user
-      POSTGRES_PASSWORD: tracechain_password_staging
-    deploy:
-      resources:
-        limits:
-          memory: 512M
-        reservations:
-          memory: 256M
+  # PostgreSQL removed - using Neon database
 
   # Redis - Staging configuration
   redis:

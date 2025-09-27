@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { AuthRequest } from './auth.js';
+import { AuthRequest } from './auth';
 export declare enum UserRole {
     ADMIN = "admin",
     MODERATOR = "moderator",

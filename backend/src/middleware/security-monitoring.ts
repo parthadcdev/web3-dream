@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { AuthRequest } from './auth.js';
+import { AuthRequest } from './auth';
 
 // Security metrics storage
 interface SecurityMetrics {
@@ -284,7 +284,8 @@ export const cleanupSecurityEvents = (): void => {
   
   // Remove events older than 30 days
   for (let i = securityEvents.length - 1; i >= 0; i--) {
-    if (securityEvents[i].timestamp < thirtyDaysAgo) {
+    const event = securityEvents[i];
+    if (event && event.timestamp < thirtyDaysAgo) {
       securityEvents.splice(i, 1);
     }
   }

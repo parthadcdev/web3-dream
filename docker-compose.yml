@@ -5,27 +5,6 @@ version: '3.8'
 # or: podman compose up -d (if using newer Podman versions)
 
 services:
-  # PostgreSQL Database
-  postgres:
-    image: postgres:14
-    container_name: tracechain-postgres
-    environment:
-      POSTGRES_DB: tracechain_db
-      POSTGRES_USER: tracechain_user
-      POSTGRES_PASSWORD: tracechain_password
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./infrastructure/database/init.sql:/docker-entrypoint-initdb.d/init.sql
-    networks:
-      - tracechain-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U tracechain_user -d tracechain_db"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   # Redis Cache
   redis:
     image: redis:7-alpine
@@ -51,7 +30,7 @@ services:
     environment:
       NODE_ENV: development
       PORT: 3000
-      DATABASE_URL: postgresql://tracechain_user:tracechain_password@postgres:5432/tracechain_db
+      DATABASE_URL: ${DATABASE_URL}
       REDIS_URL: redis://redis:6379
       JWT_SECRET: your_jwt_secret_here
       JWT_EXPIRES_IN: 24h
@@ -63,8 +42,6 @@ services:
       - ./backend:/app
       - /app/node_modules
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
         condition: service_healthy
     networks:
@@ -161,7 +138,6 @@ services:
       - tracechain-network
 
 volumes:
-  postgres_data:
   redis_data:
   mosquitto_data:
   mosquitto_logs:

@@ -5,8 +5,9 @@ import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import session from 'express-session';
-import { errorHandler } from './middleware/errorHandler.js';
-import { authMiddleware } from './middleware/auth.js';
+import { errorHandler } from './middleware/errorHandler';
+import { authMiddleware } from './middleware/auth';
+import { checkDatabaseConnection, disconnectDatabase } from './config/database';
 import { 
   securityHeaders, 
   corsConfig, 
@@ -21,7 +22,7 @@ import {
   securityLogger,
   securityResponseHeaders,
   requestTimeout
-} from './middleware/security.js';
+} from './middleware/security';
 import { 
   requireResourcePermission, 
   requireRole, 
@@ -29,13 +30,15 @@ import {
   UserRole,
   Resource,
   Permission
-} from './middleware/authorization.js';
-import productRoutes from './routes/products.js';
-import userRoutes from './routes/users.js';
-import healthRoutes from './routes/health.js';
-import nftRoutes from './routes/nft.js';
-import securityRoutes from './routes/security.js';
-import { securityMonitoring } from './middleware/security-monitoring.js';
+} from './middleware/authorization';
+import productRoutes from './routes/products';
+import userRoutes from './routes/users';
+import healthRoutes from './routes/health';
+import nftRoutes from './routes/nft';
+import securityRoutes from './routes/security';
+import databaseRoutes from './routes/database';
+import stytchRoutes from './routes/stytch';
+import { securityMonitoring } from './middleware/security-monitoring';
 
 // Load environment variables
 dotenv.config();
@@ -91,6 +94,12 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Health check route (no auth required)
 app.use('/api/health', healthRoutes);
 
+// Database routes (no auth required for health check)
+app.use('/api/database', databaseRoutes);
+
+// Stytch authentication routes (no auth required)
+app.use('/api/stytch', stytchRoutes);
+
 // API routes with proper authentication and authorization
 app.use('/api/users', userRoutes);
 app.use('/api/products', 
@@ -136,10 +145,26 @@ app.use('*', (req, res) => {
 app.use(errorHandler);
 
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📚 API Documentation: http://localhost:${PORT}/api/health`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  
+  // Check database connection on startup
+  await checkDatabaseConnection();
+});
+
+// Graceful shutdown
+process.on('SIGTERM', async () => {
+  console.log('🛑 SIGTERM received, shutting down gracefully...');
+  await disconnectDatabase();
+  process.exit(0);
+});
+
+process.on('SIGINT', async () => {
+  console.log('🛑 SIGINT received, shutting down gracefully...');
+  await disconnectDatabase();
+  process.exit(0);
 });
 
 export default app;

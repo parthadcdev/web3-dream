@@ -8,94 +8,156 @@ on:
   schedule:
     - cron: '0 2 * * 1' # Weekly on Monday at 2 AM
 
+env:
+  NODE_VERSION: '18'
+
 jobs:
-  security-scan:
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        cache: 'npm'
-        
-    - name: Install dependencies
-      run: |
-        cd backend && npm ci
-        cd ../smart-contracts && npm ci --legacy-peer-deps
-        
-    - name: Run security audit - Backend
-      run: |
-        cd backend
-        npm audit --audit-level=moderate
-        
-    - name: Run security audit - Smart Contracts
-      run: |
-        cd smart-contracts
-        npm audit --audit-level=moderate
-        
-    - name: Run security tests
-      run: |
-        cd backend
-        npm run test:security
-        
-    - name: Upload security results
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: security-results
-        path: |
-          backend/security-test-results.json
-          smart-contracts/npm-audit-results.json
-          
   dependency-scan:
     runs-on: ubuntu-latest
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
-    - name: Run Snyk to check for vulnerabilities
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: |
+        cd backend && npm ci
+        cd ../frontend && npm ci
+        cd ../smart-contracts && npm ci
+
+    - name: Run npm audit
+      run: |
+        echo "Backend dependencies:"
+        cd backend && npm audit --audit-level moderate
+        echo "Frontend dependencies:"
+        cd ../frontend && npm audit --audit-level moderate
+        echo "Smart contracts dependencies:"
+        cd ../smart-contracts && npm audit --audit-level moderate
+
+    - name: Run Snyk security scan
       uses: snyk/actions/node@master
       continue-on-error: true
       env:
         SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
       with:
         args: --severity-threshold=high
-        command: test
-        file: backend/package.json
-        
-    - name: Run Snyk to check for vulnerabilities - Smart Contracts
-      uses: snyk/actions/node@master
-      continue-on-error: true
-      env:
-        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-      with:
-        args: --severity-threshold=high
-        command: test
-        file: smart-contracts/package.json
-        
+      run: |
+        cd backend && snyk test
+        cd ../frontend && snyk test
+        cd ../smart-contracts && snyk test
+
   code-scan:
     runs-on: ubuntu-latest
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
-    - name: Run CodeQL Analysis
-      uses: github/codeql-action/init@v3
+
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v2
       with:
         languages: javascript, typescript
-        
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: |
+        cd backend && npm ci
+        cd ../frontend && npm ci
+        cd ../smart-contracts && npm ci
+
+    - name: Build for analysis
+      run: |
+        cd backend && npm run build
+        cd ../frontend && npm run build
+        cd ../smart-contracts && npm run compile
+
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v3
-      
-    - name: Run ESLint security rules
+      uses: github/codeql-action/analyze@v2
+
+  smart-contract-scan:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: |
+        cd smart-contracts && npm ci
+
+    - name: Compile smart contracts
+      run: |
+        cd smart-contracts
+        npm run compile
+
+    - name: Run smart contract security tests
+      run: |
+        cd smart-contracts
+        npm test
+
+    - name: Run Slither static analysis
+      uses: crytic/slither-action@v0.8.0
+      with:
+        target: 'smart-contracts/contracts'
+        solc-version: '0.8.20'
+        slither-args: '--exclude-dependencies --exclude-informational --exclude-low'
+
+  database-scan:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: |
+        cd backend && npm ci
+
+    - name: Generate Prisma client
       run: |
         cd backend
-        npm run lint
-        cd ../smart-contracts
-        npm run lint || true
+        npx prisma generate
+
+    - name: Check database schema
+      run: |
+        cd backend
+        npx prisma db pull --force
+
+    - name: Validate database security
+      run: |
+        cd backend
+        npm run test:security
+
+  security-report:
+    needs: [dependency-scan, code-scan, smart-contract-scan, database-scan]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: Generate security report
+      run: |
+        echo "Security scan completed"
+        echo "Check individual job results for details"

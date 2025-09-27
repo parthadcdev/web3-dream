@@ -10,7 +10,7 @@ async function main() {
   // Get the deployer account
   const [deployer] = await ethers.getSigners();
   console.log("Deploying contracts with account:", deployer.address);
-  console.log("Account balance:", (await deployer.getBalance()).toString());
+  console.log("Account balance:", (await ethers.provider.getBalance(deployer.address)).toString());
 
   // Deploy NFT Certificate contract
   console.log("\n📄 Deploying NFTCertificate contract...");
@@ -19,31 +19,31 @@ async function main() {
     "TRACE",
     "https://api.tracechain.com/metadata/"
   );
-  await nftCertificate.deployed();
-  console.log("✅ NFTCertificate deployed to:", nftCertificate.address);
+  await nftCertificate.waitForDeployment();
+  console.log("✅ NFTCertificate deployed to:", await nftCertificate.getAddress());
 
   // Deploy NFT Factory contract
   console.log("\n🏭 Deploying NFTFactory contract...");
   const nftFactory = await NFTFactory.deploy();
-  await nftFactory.deployed();
-  console.log("✅ NFTFactory deployed to:", nftFactory.address);
+  await nftFactory.waitForDeployment();
+  console.log("✅ NFTFactory deployed to:", await nftFactory.getAddress());
 
   // Configure the factory to use the NFT Certificate contract
   console.log("\n⚙️ Configuring factory...");
-  await nftFactory.updateDeploymentFee(ethers.utils.parseEther("0.1"));
+  await nftFactory.updateDeploymentFee(ethers.parseEther("0.1"));
   console.log("✅ Factory configured");
 
   // Verify contracts on block explorer (if not on local network)
   const network = await ethers.provider.getNetwork();
   if (network.chainId !== 31337) { // Not localhost
     console.log("\n🔍 Waiting for block confirmations...");
-    await nftCertificate.deployTransaction.wait(5);
-    await nftFactory.deployTransaction.wait(5);
+    await nftCertificate.deploymentTransaction().wait(5);
+    await nftFactory.deploymentTransaction().wait(5);
 
     console.log("\n🔍 Verifying contracts on block explorer...");
     try {
       await hre.run("verify:verify", {
-        address: nftCertificate.address,
+        address: await nftCertificate.getAddress(),
         constructorArguments: [
           "TraceChain Certificates",
           "TRACE",
@@ -57,7 +57,7 @@ async function main() {
 
     try {
       await hre.run("verify:verify", {
-        address: nftFactory.address,
+        address: await nftFactory.getAddress(),
         constructorArguments: [],
       });
       console.log("✅ NFTFactory verified");

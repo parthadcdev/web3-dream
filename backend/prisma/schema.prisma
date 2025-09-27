@@ -1,0 +1,160 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User Management
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  walletAddress String?  @unique
+  stytchUserId  String?  @unique
+  firstName     String?
+  lastName      String?
+  role          UserRole @default(USER)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  products      Product[]
+  nftCertificates NFTCertificate[]
+  auditLogs     AuditLog[]
+
+  @@map("users")
+}
+
+enum UserRole {
+  USER
+  MANUFACTURER
+  DISTRIBUTOR
+  RETAILER
+  ADMIN
+}
+
+// Product Management
+model Product {
+  id             String   @id @default(cuid())
+  name           String
+  type           String
+  batchNumber    String   @unique
+  manufactureDate DateTime
+  expiryDate     DateTime?
+  rawMaterials   String[]
+  metadataURI    String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  manufacturerId String
+  manufacturer   User     @relation(fields: [manufacturerId], references: [id])
+  checkpoints    Checkpoint[]
+  nftCertificates NFTCertificate[]
+
+  @@map("products")
+}
+
+// Checkpoint Management
+model Checkpoint {
+  id          String   @id @default(cuid())
+  name        String
+  location    String
+  timestamp   DateTime
+  environment String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@map("checkpoints")
+}
+
+// NFT Certificate Management
+model NFTCertificate {
+  id               String   @id @default(cuid())
+  tokenId          String   @unique
+  contractAddress  String
+  verificationCode String   @unique
+  metadataURI      String
+  complianceStandards String[]
+  isVerified       Boolean  @default(false)
+  lastVerified     String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Relations
+  productId        String
+  product          Product  @relation(fields: [productId], references: [id])
+  ownerId          String
+  owner            User     @relation(fields: [ownerId], references: [id])
+
+  @@map("nft_certificates")
+}
+
+// Audit Logging
+model AuditLog {
+  id        String   @id @default(cuid())
+  action    String
+  resource  String
+  details   Json?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  // Relations
+  userId    String?
+  user      User?   @relation(fields: [userId], references: [id])
+
+  @@map("audit_logs")
+}
+
+// Security Monitoring
+model SecurityEvent {
+  id          String   @id @default(cuid())
+  eventType   String
+  severity    String
+  description String
+  metadata    Json?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  @@map("security_events")
+}
+
+// Token Economy (for future $TRACE token integration)
+model TokenTransaction {
+  id          String   @id @default(cuid())
+  fromAddress String
+  toAddress   String
+  amount      String
+  tokenType   String
+  txHash      String   @unique
+  blockNumber String?
+  createdAt   DateTime @default(now())
+
+  @@map("token_transactions")
+}
+
+// Compliance Standards
+model ComplianceStandard {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String
+  version     String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("compliance_standards")
+}

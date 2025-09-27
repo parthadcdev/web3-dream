@@ -1,6 +1,5 @@
 ---
 alwaysApply: true
-description: TraceChain project structure and architecture guide
 ---
 
 # TraceChain Project Structure
@@ -8,11 +7,11 @@ description: TraceChain project structure and architecture guide
 ## Core Architecture
 TraceChain is a decentralized traceability platform with the following structure:
 
-- **Frontend**: React TypeScript app in [frontend/](mdc:frontend/) - Material-UI based interface
-- **Backend**: Node.js/Express API in [backend/](mdc:backend/) - RESTful API with JWT authentication
-- **Smart Contracts**: Solidity contracts in [smart-contracts/](mdc:smart-contracts/) - Hardhat-based blockchain contracts
-- **MCP Server**: Unified MCP server in [mcp-server-unified.js](mdc:mcp-server-unified.js) - Git automation and project management
-- **Infrastructure**: Docker/Podman setup with PostgreSQL, Redis, Prometheus, Grafana
+- **Frontend**: [frontend/](mdc:frontend/) - React TypeScript app with Material-UI
+- **Backend**: [backend/](mdc:backend/) - Node.js/Express API with Prisma ORM
+- **Smart Contracts**: [smart-contracts/](mdc:smart-contracts/) - Solidity contracts with Hardhat
+- **MCP Server**: [mcp-server-unified.js](mdc:mcp-server-unified.js) - Unified MCP with Git operations
+- **Infrastructure**: Docker/Podman setup with Redis, Prometheus, Grafana
 
 ## Key Files
 - **Main MCP Server**: [mcp-server-unified.js](mdc:mcp-server-unified.js) - Unified MCP with Git operations

@@ -1,9 +1,14 @@
-import express from 'express';
-import { body, validationResult } from 'express-validator';
-import { authMiddleware } from '../middleware/auth';
-import { requireResourcePermission, auditLog, Resource, Permission } from '../middleware/authorization.js';
-import { validate, sanitize, validationGroups } from '../middleware/validation.js';
-const router = express.Router();
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = __importDefault(require("express"));
+const express_validator_1 = require("express-validator");
+const auth_1 = require("../middleware/auth");
+const authorization_1 = require("../middleware/authorization");
+const validation_1 = require("../middleware/validation");
+const router = express_1.default.Router();
 // Mock data for development
 let mockCertificates = [
     {
@@ -47,44 +52,44 @@ let mockCertificates = [
 ];
 // Validation middleware
 const validateMintRequest = [
-    body('productId').notEmpty().withMessage('Product ID is required'),
-    body('certificateType').isIn(['authenticity', 'compliance', 'ownership', 'quality'])
+    (0, express_validator_1.body)('productId').notEmpty().withMessage('Product ID is required'),
+    (0, express_validator_1.body)('certificateType').isIn(['authenticity', 'compliance', 'ownership', 'quality'])
         .withMessage('Invalid certificate type'),
-    body('metadataURI').isURL().withMessage('Valid metadata URI is required'),
-    body('complianceStandards').isArray().withMessage('Compliance standards must be an array'),
-    body('expiresAt').optional().isISO8601().withMessage('Invalid expiry date format')
+    (0, express_validator_1.body)('metadataURI').isURL().withMessage('Valid metadata URI is required'),
+    (0, express_validator_1.body)('complianceStandards').isArray().withMessage('Compliance standards must be an array'),
+    (0, express_validator_1.body)('expiresAt').optional().isISO8601().withMessage('Invalid expiry date format')
 ];
 // GET /api/nft/certificates - Get all certificates
-router.get('/certificates', authMiddleware, validate(validationGroups.nft.query), sanitize, requireResourcePermission(Resource.NFT, Permission.READ), auditLog('nft_list', Resource.NFT), async (req, res) => {
+router.get('/certificates', auth_1.authMiddleware, (0, validation_1.validate)(validation_1.validationGroups.nft.query), validation_1.sanitize, (0, authorization_1.requireResourcePermission)(authorization_1.Resource.NFT, authorization_1.Permission.READ), (0, authorization_1.auditLog)('nft_list', authorization_1.Resource.NFT), async (req, res) => {
     try {
         // In a real implementation, this would query the database
         // For now, return mock data
-        res.json(mockCertificates);
+        return res.json(mockCertificates);
     }
     catch (error) {
         console.error('Error fetching certificates:', error);
-        res.status(500).json({ error: { message: 'Failed to fetch certificates' } });
+        return res.status(500).json({ error: { message: 'Failed to fetch certificates' } });
     }
 });
 // GET /api/nft/certificates/:tokenId - Get specific certificate
-router.get('/certificates/:tokenId', authMiddleware, async (req, res) => {
+router.get('/certificates/:tokenId', auth_1.authMiddleware, async (req, res) => {
     try {
         const { tokenId } = req.params;
         const certificate = mockCertificates.find(cert => cert.tokenId === tokenId);
         if (!certificate) {
             return res.status(404).json({ error: { message: 'Certificate not found' } });
         }
-        res.json(certificate);
+        return res.json(certificate);
     }
     catch (error) {
         console.error('Error fetching certificate:', error);
-        res.status(500).json({ error: { message: 'Failed to fetch certificate' } });
+        return res.status(500).json({ error: { message: 'Failed to fetch certificate' } });
     }
 });
 // POST /api/nft/mint - Mint new certificate
-router.post('/mint', authMiddleware, validate(validationGroups.nft.mint), sanitize, requireResourcePermission(Resource.NFT, Permission.MINT), auditLog('nft_mint', Resource.NFT), async (req, res) => {
+router.post('/mint', auth_1.authMiddleware, (0, validation_1.validate)(validation_1.validationGroups.nft.mint), validation_1.sanitize, (0, authorization_1.requireResourcePermission)(authorization_1.Resource.NFT, authorization_1.Permission.MINT), (0, authorization_1.auditLog)('nft_mint', authorization_1.Resource.NFT), async (req, res) => {
     try {
-        const errors = validationResult(req);
+        const errors = (0, express_validator_1.validationResult)(req);
         if (!errors.isEmpty()) {
             return res.status(400).json({
                 error: {
@@ -124,7 +129,7 @@ router.post('/mint', authMiddleware, validate(validationGroups.nft.mint), saniti
         // 2. Mint the NFT on the blockchain
         // 3. Store the certificate data in the database
         // 4. Upload metadata to IPFS
-        res.status(201).json({
+        return res.status(201).json({
             success: true,
             tokenId,
             verificationCode,
@@ -133,11 +138,11 @@ router.post('/mint', authMiddleware, validate(validationGroups.nft.mint), saniti
     }
     catch (error) {
         console.error('Error minting certificate:', error);
-        res.status(500).json({ error: { message: 'Failed to mint certificate' } });
+        return res.status(500).json({ error: { message: 'Failed to mint certificate' } });
     }
 });
 // POST /api/nft/verify/:code - Verify certificate by code
-router.post('/verify/:code', authMiddleware, async (req, res) => {
+router.post('/verify/:code', auth_1.authMiddleware, async (req, res) => {
     try {
         const { code } = req.params;
         const certificate = mockCertificates.find(cert => cert.verificationCode === code);
@@ -157,7 +162,7 @@ router.post('/verify/:code', authMiddleware, async (req, res) => {
         // 1. Call the smart contract to verify the certificate
         // 2. Record the verification event
         // 3. Update the database
-        res.json({
+        return res.json({
             isValid,
             certificate: {
                 tokenId: certificate.tokenId,
@@ -180,23 +185,23 @@ router.post('/verify/:code', authMiddleware, async (req, res) => {
     }
     catch (error) {
         console.error('Error verifying certificate:', error);
-        res.status(500).json({ error: { message: 'Failed to verify certificate' } });
+        return res.status(500).json({ error: { message: 'Failed to verify certificate' } });
     }
 });
 // GET /api/nft/certificates/product/:productId - Get certificates by product
-router.get('/certificates/product/:productId', authMiddleware, async (req, res) => {
+router.get('/certificates/product/:productId', auth_1.authMiddleware, async (req, res) => {
     try {
         const { productId } = req.params;
         const productCertificates = mockCertificates.filter(cert => cert.productId === productId);
-        res.json(productCertificates);
+        return res.json(productCertificates);
     }
     catch (error) {
         console.error('Error fetching product certificates:', error);
-        res.status(500).json({ error: { message: 'Failed to fetch product certificates' } });
+        return res.status(500).json({ error: { message: 'Failed to fetch product certificates' } });
     }
 });
 // PUT /api/nft/certificates/:tokenId/star - Toggle star status
-router.put('/certificates/:tokenId/star', authMiddleware, async (req, res) => {
+router.put('/certificates/:tokenId/star', auth_1.authMiddleware, async (req, res) => {
     try {
         const { tokenId } = req.params;
         const certificate = mockCertificates.find(cert => cert.tokenId === tokenId);
@@ -204,18 +209,18 @@ router.put('/certificates/:tokenId/star', authMiddleware, async (req, res) => {
             return res.status(404).json({ error: { message: 'Certificate not found' } });
         }
         certificate.isStarred = !certificate.isStarred;
-        res.json({
+        return res.json({
             success: true,
             isStarred: certificate.isStarred
         });
     }
     catch (error) {
         console.error('Error updating star status:', error);
-        res.status(500).json({ error: { message: 'Failed to update star status' } });
+        return res.status(500).json({ error: { message: 'Failed to update star status' } });
     }
 });
 // DELETE /api/nft/certificates/:tokenId - Invalidate certificate
-router.delete('/certificates/:tokenId', authMiddleware, async (req, res) => {
+router.delete('/certificates/:tokenId', auth_1.authMiddleware, async (req, res) => {
     try {
         const { tokenId } = req.params;
         const certificate = mockCertificates.find(cert => cert.tokenId === tokenId);
@@ -224,18 +229,18 @@ router.delete('/certificates/:tokenId', authMiddleware, async (req, res) => {
         }
         // In a real implementation, this would call the smart contract to invalidate
         certificate.isValid = false;
-        res.json({
+        return res.json({
             success: true,
             message: 'Certificate invalidated successfully'
         });
     }
     catch (error) {
         console.error('Error invalidating certificate:', error);
-        res.status(500).json({ error: { message: 'Failed to invalidate certificate' } });
+        return res.status(500).json({ error: { message: 'Failed to invalidate certificate' } });
     }
 });
 // GET /api/nft/stats - Get certificate statistics
-router.get('/stats', authMiddleware, async (req, res) => {
+router.get('/stats', auth_1.authMiddleware, async (req, res) => {
     try {
         const totalCertificates = mockCertificates.length;
         const validCertificates = mockCertificates.filter(cert => cert.isValid).length;
@@ -245,7 +250,7 @@ router.get('/stats', authMiddleware, async (req, res) => {
             acc[cert.certificateType] = (acc[cert.certificateType] || 0) + 1;
             return acc;
         }, {});
-        res.json({
+        return res.json({
             totalCertificates,
             validCertificates,
             expiredCertificates,
@@ -255,7 +260,7 @@ router.get('/stats', authMiddleware, async (req, res) => {
     }
     catch (error) {
         console.error('Error fetching stats:', error);
-        res.status(500).json({ error: { message: 'Failed to fetch statistics' } });
+        return res.status(500).json({ error: { message: 'Failed to fetch statistics' } });
     }
 });
 // Helper function to generate verification code
@@ -267,5 +272,5 @@ function generateVerificationCode() {
     }
     return result;
 }
-export default router;
+exports.default = router;
 //# sourceMappingURL=nft.js.map

@@ -1,0 +1,624 @@
+---
+globs: backend/src/routes/stytch.ts,backend/src/services/stytchService.ts,frontend/src/components/Auth/StytchLogin.tsx
+description: Stytch identity provider integration and authentication patterns
+---
+
+# Stytch Authentication Integration
+
+## Overview
+TraceChain integrates with Stytch as an identity provider for passwordless authentication, providing multiple authentication methods including magic links and OTP (One-Time Password).
+
+## Backend Integration
+
+### StytchService (`backend/src/services/stytchService.ts`)
+```typescript
+import * as stytch from 'stytch';
+
+// Initialize Stytch client
+const stytchClient = new stytch.Client({
+  project_id: process.env.STYTCH_PROJECT_ID!,
+  secret: process.env.STYTCH_SECRET!,
+  env: process.env.STYTCH_ENVIRONMENT === 'live' ? stytch.envs.live : stytch.envs.test,
+});
+
+export interface StytchUser {
+  user_id: string;
+  email: string;
+  name?: {
+    first_name?: string;
+    last_name?: string;
+  };
+  created_at: string;
+  status: string;
+}
+
+export interface StytchSession {
+  session_token: string;
+  session_jwt: string;
+  expires_at: string;
+}
+
+export class StytchService {
+  // Send magic link to user's email
+  static async sendMagicLink(email: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      await stytchClient.magicLinks.email.loginOrCreate({
+        email,
+        login_magic_link_url: `${process.env.FRONTEND_URL}/auth/callback?token={token}`,
+        signup_magic_link_url: `${process.env.FRONTEND_URL}/auth/callback?token={token}`,
+      });
+
+      return { success: true };
+    } catch (error: any) {
+      console.error('Magic link send error:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  // Authenticate magic link token
+  static async authenticateMagicLink(token: string): Promise<{ success: boolean; session?: StytchSession; error?: string }> {
+    try {
+      const response = await stytchClient.magicLinks.authenticate({
+        magic_links_token: token,
+      });
+
+      return {
+        success: true,
+        session: {
+          session_token: response.session_token,
+          session_jwt: response.session_jwt,
+          expires_at: response.session.expires_at,
+        }
+      };
+    } catch (error: any) {
+      console.error('Magic link authentication error:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  // Send OTP to user's email
+  static async sendOTP(email: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      await stytchClient.otps.email.loginOrCreate({
+        email,
+      });
+
+      return { success: true };
+    } catch (error: any) {
+      console.error('OTP send error:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  // Authenticate OTP
+  static async authenticateOTP(email: string, code: string): Promise<{ success: boolean; session?: StytchSession; error?: string }> {
+    try {
+      const response = await stytchClient.otps.authenticate({
+        email,
+        code,
+      });
+
+      return {
+        success: true,
+        session: {
+          session_token: response.session_token,
+          session_jwt: response.session_jwt,
+          expires_at: response.session.expires_at,
+        }
+      };
+    } catch (error: any) {
+      console.error('OTP authentication error:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  // Get user information from session
+  static async getUserFromSession(sessionToken: string): Promise<{ success: boolean; user?: StytchUser; error?: string }> {
+    try {
+      const response = await stytchClient.sessions.get({
+        session_token: sessionToken,
+      });
+
+      return {
+        success: true,
+        user: {
+          user_id: response.user.user_id,
+          email: response.user.email,
+          name: response.user.name,
+          created_at: response.user.created_at,
+          status: response.user.status,
+        }
+      };
+    } catch (error: any) {
+      console.error('Get user from session error:', error);
+      return { success: false, error: error.message };
+    }
+  }
+}
+```
+
+### Stytch Routes (`backend/src/routes/stytch.ts`)
+```typescript
+import { Router } from 'express';
+import { body, validationResult } from 'express-validator';
+import { Request, Response } from 'express';
+import { asyncHandler } from '../middleware/errorHandler';
+import { StytchService } from '../services/stytchService';
+import { UserService } from '../services/userService';
+import jwt from 'jsonwebtoken';
+
+const router = Router();
+
+// Validation middleware
+const validateEmail = body('email').isEmail().normalizeEmail();
+const validateToken = body('token').notEmpty();
+const validateOTP = body('code').isLength({ min: 6, max: 6 }).isNumeric();
+
+/**
+ * Send magic link to user's email
+ * POST /api/stytch/magic-link/send
+ */
+router.post('/magic-link/send', validateEmail, asyncHandler(async (req: Request, res: Response) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({
+      success: false,
+      error: 'Validation failed',
+      details: errors.array()
+    });
+  }
+
+  const { email } = req.body;
+
+  const result = await StytchService.sendMagicLink(email);
+
+  if (result.success) {
+    res.json({
+      success: true,
+      message: 'Magic link sent successfully'
+    });
+  } else {
+    res.status(400).json({
+      success: false,
+      error: result.error || 'Failed to send magic link'
+    });
+  }
+}));
+
+/**
+ * Authenticate magic link token
+ * POST /api/stytch/magic-link/authenticate
+ */
+router.post('/magic-link/authenticate', validateToken, asyncHandler(async (req: Request, res: Response) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({
+      success: false,
+      error: 'Validation failed',
+      details: errors.array()
+    });
+  }
+
+  const { token } = req.body;
+
+  const result = await StytchService.authenticateMagicLink(token);
+
+  if (result.success && result.session) {
+    // Get or create user in our database
+    const userResult = await UserService.getOrCreateStytchUser(result.session.user);
+    
+    if (!userResult.success || !userResult.user) {
+      return res.status(500).json({
+        success: false,
+        error: userResult.error || 'Failed to create user account'
+      });
+    }
+
+    // Generate our own JWT token for the user
+    const jwtToken = jwt.sign(
+      {
+        id: userResult.user.id,
+        email: userResult.user.email,
+        stytch_user_id: result.session.user.user_id,
+        role: userResult.user.role
+      },
+      process.env.JWT_SECRET!,
+      { expiresIn: '24h' }
+    );
+
+    res.json({
+      success: true,
+      message: 'Authentication successful',
+      token: jwtToken,
+      user: {
+        id: userResult.user.id,
+        email: userResult.user.email,
+        firstName: userResult.user.firstName,
+        lastName: userResult.user.lastName,
+        role: userResult.user.role
+      },
+      stytch_session: {
+        session_token: result.session.session_token,
+        session_jwt: result.session.session_jwt,
+        expires_at: result.session.expires_at
+      }
+    });
+  } else {
+    res.status(401).json({
+      success: false,
+      error: result.error || 'Authentication failed'
+    });
+  }
+}));
+
+/**
+ * Send OTP to user's email
+ * POST /api/stytch/otp
+ */
+router.post('/otp', validateEmail, asyncHandler(async (req: Request, res: Response) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({
+      success: false,
+      error: 'Validation failed',
+      details: errors.array()
+    });
+  }
+
+  const { email } = req.body;
+
+  const result = await StytchService.sendOTP(email);
+
+  if (result.success) {
+    res.json({
+      success: true,
+      message: 'OTP sent successfully'
+    });
+  } else {
+    res.status(400).json({
+      success: false,
+      error: result.error || 'Failed to send OTP'
+    });
+  }
+}));
+
+/**
+ * Authenticate OTP
+ * POST /api/stytch/otp/authenticate
+ */
+router.post('/otp/authenticate', [validateEmail, validateOTP], asyncHandler(async (req: Request, res: Response) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({
+      success: false,
+      error: 'Validation failed',
+      details: errors.array()
+    });
+  }
+
+  const { email, code } = req.body;
+
+  const result = await StytchService.authenticateOTP(email, code);
+
+  if (result.success && result.session) {
+    // Get or create user in our database
+    const userResult = await UserService.getOrCreateStytchUser(result.session.user);
+    
+    if (!userResult.success || !userResult.user) {
+      return res.status(500).json({
+        success: false,
+        error: userResult.error || 'Failed to create user account'
+      });
+    }
+
+    // Generate our own JWT token for the user
+    const jwtToken = jwt.sign(
+      {
+        id: userResult.user.id,
+        email: userResult.user.email,
+        stytch_user_id: result.session.user.user_id,
+        role: userResult.user.role
+      },
+      process.env.JWT_SECRET!,
+      { expiresIn: '24h' }
+    );
+
+    res.json({
+      success: true,
+      message: 'Authentication successful',
+      token: jwtToken,
+      user: {
+        id: userResult.user.id,
+        email: userResult.user.email,
+        firstName: userResult.user.firstName,
+        lastName: userResult.user.lastName,
+        role: userResult.user.role
+      },
+      stytch_session: {
+        session_token: result.session.session_token,
+        session_jwt: result.session.session_jwt,
+        expires_at: result.session.expires_at
+      }
+    });
+  } else {
+    res.status(401).json({
+      success: false,
+      error: result.error || 'Authentication failed'
+    });
+  }
+}));
+
+export default router;
+```
+
+## Frontend Integration
+
+### StytchLogin Component (`frontend/src/components/Auth/StytchLogin.tsx`)
+```typescript
+import React, { useState } from 'react';
+import {
+  Box,
+  TextField,
+  Button,
+  Typography,
+  Alert,
+  CircularProgress
+} from '@mui/material';
+import { Email, Security } from '@mui/icons-material';
+
+interface StytchLoginProps {
+  onAuthSuccess: (token: string, user: any) => void;
+  onError: (error: string) => void;
+}
+
+const StytchLogin: React.FC<StytchLoginProps> = ({ onAuthSuccess, onError }) => {
+  const [email, setEmail] = useState('');
+  const [otp, setOtp] = useState('');
+  const [step, setStep] = useState<'email' | 'otp'>('email');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSendMagicLink = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await fetch('http://localhost:3000/api/stytch/magic-link/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Show success message
+        setError(null);
+        // In a real app, you'd show a message to check email
+      } else {
+        setError(data.error || 'Failed to send magic link');
+      }
+    } catch (err) {
+      setError('Network error. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSendOTP = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await fetch('http://localhost:3000/api/stytch/otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setStep('otp');
+      } else {
+        setError(data.error || 'Failed to send OTP');
+      }
+    } catch (err) {
+      setError('Network error. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOTP = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await fetch('http://localhost:3000/api/stytch/otp/authenticate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, code: otp }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        onAuthSuccess(data.token, data.user);
+      } else {
+        setError(data.error || 'Invalid OTP');
+      }
+    } catch (err) {
+      setError('Network error. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Box>
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
+
+      {step === 'email' && (
+        <Box>
+          <TextField
+            fullWidth
+            label="Email Address"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            margin="normal"
+            required
+            InputProps={{
+              startAdornment: <Email />
+            }}
+          />
+
+          <Button
+            fullWidth
+            variant="contained"
+            onClick={handleSendMagicLink}
+            disabled={loading || !email}
+            sx={{ mt: 2, mb: 1 }}
+          >
+            {loading ? <CircularProgress size={24} /> : 'Send Magic Link'}
+          </Button>
+
+          <Button
+            fullWidth
+            variant="outlined"
+            onClick={handleSendOTP}
+            disabled={loading || !email}
+            sx={{ mb: 2 }}
+          >
+            {loading ? <CircularProgress size={24} /> : 'Send OTP Instead'}
+          </Button>
+        </Box>
+      )}
+
+      {step === 'otp' && (
+        <Box>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            We've sent a 6-digit code to {email}
+          </Typography>
+
+          <TextField
+            fullWidth
+            label="Enter OTP"
+            value={otp}
+            onChange={(e) => setOtp(e.target.value)}
+            margin="normal"
+            required
+            inputProps={{ maxLength: 6 }}
+            InputProps={{
+              startAdornment: <Security />
+            }}
+          />
+
+          <Button
+            fullWidth
+            variant="contained"
+            onClick={handleVerifyOTP}
+            disabled={loading || otp.length !== 6}
+            sx={{ mt: 2, mb: 1 }}
+          >
+            {loading ? <CircularProgress size={24} /> : 'Verify OTP'}
+          </Button>
+
+          <Button
+            fullWidth
+            variant="text"
+            onClick={() => setStep('email')}
+            disabled={loading}
+          >
+            Back to Email
+          </Button>
+        </Box>
+      )}
+    </Box>
+  );
+};
+
+export default StytchLogin;
+```
+
+## Environment Configuration
+
+### Required Environment Variables
+```env
+# Stytch Configuration
+STYTCH_PROJECT_ID=your_stytch_project_id
+STYTCH_SECRET=your_stytch_secret
+STYTCH_ENVIRONMENT=test  # or 'live' for production
+
+# Frontend URL for callbacks
+FRONTEND_URL=http://localhost:3001
+```
+
+## Authentication Flow
+
+### Magic Link Flow
+1. User enters email address
+2. Backend sends magic link via Stytch
+3. User clicks link in email
+4. Frontend receives token from URL
+5. Backend authenticates token with Stytch
+6. User is logged in and JWT token is generated
+
+### OTP Flow
+1. User enters email address
+2. Backend sends OTP via Stytch
+3. User enters 6-digit code
+4. Backend authenticates OTP with Stytch
+5. User is logged in and JWT token is generated
+
+## Integration with User Management
+
+### User Creation
+- Stytch users are automatically created in the local database
+- User information is synced between Stytch and local database
+- JWT tokens are generated for session management
+
+### User Roles
+- Default role: `USER`
+- Roles can be updated after registration
+- Role-based access control is maintained
+
+## Security Considerations
+
+### Token Management
+- Stytch session tokens are used for authentication
+- Local JWT tokens are generated for API access
+- Tokens have appropriate expiration times
+
+### Error Handling
+- All Stytch API calls include proper error handling
+- User-friendly error messages are displayed
+- Network errors are handled gracefully
+
+### Rate Limiting
+- Stytch has built-in rate limiting
+- Additional rate limiting can be implemented at the API level
+
+## Testing
+
+### Development Testing
+- Use Stytch test environment
+- Test with various email addresses
+- Verify magic link and OTP flows
+
+### Production Considerations
+- Switch to Stytch live environment
+- Configure proper callback URLs
+- Monitor authentication success rates
+- Set up proper error monitoring

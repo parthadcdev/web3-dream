@@ -1,6 +1,9 @@
-import { createError } from './errorHandler.js';
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.geoAccessControl = exports.timeBasedAccess = exports.ipAccessControl = exports.auditLog = exports.roleBasedRateLimit = exports.requireApiKey = exports.requireMFA = exports.requireOwnership = exports.requireRole = exports.requireResourcePermission = exports.requireResourceAccess = exports.requirePermission = exports.hasResourcePermission = exports.canAccessResource = exports.hasPermission = exports.Resource = exports.Permission = exports.UserRole = void 0;
+const errorHandler_1 = require("./errorHandler");
 // Role-based access control
-export var UserRole;
+var UserRole;
 (function (UserRole) {
     UserRole["ADMIN"] = "admin";
     UserRole["MODERATOR"] = "moderator";
@@ -10,9 +13,9 @@ export var UserRole;
     UserRole["CONSUMER"] = "consumer";
     UserRole["AUDITOR"] = "auditor";
     UserRole["VIEWER"] = "viewer";
-})(UserRole || (UserRole = {}));
+})(UserRole || (exports.UserRole = UserRole = {}));
 // Permission levels
-export var Permission;
+var Permission;
 (function (Permission) {
     Permission["READ"] = "read";
     Permission["WRITE"] = "write";
@@ -22,9 +25,9 @@ export var Permission;
     Permission["VERIFY"] = "verify";
     Permission["MINT"] = "mint";
     Permission["TRANSFER"] = "transfer";
-})(Permission || (Permission = {}));
+})(Permission || (exports.Permission = Permission = {}));
 // Resource types
-export var Resource;
+var Resource;
 (function (Resource) {
     Resource["PRODUCT"] = "product";
     Resource["CERTIFICATE"] = "certificate";
@@ -33,7 +36,7 @@ export var Resource;
     Resource["AUDIT"] = "audit";
     Resource["NFT"] = "nft";
     Resource["BLOCKCHAIN"] = "blockchain";
-})(Resource || (Resource = {}));
+})(Resource || (exports.Resource = Resource = {}));
 // Role permissions mapping
 const rolePermissions = {
     [UserRole.ADMIN]: Object.values(Permission),
@@ -56,82 +59,89 @@ const resourceAccess = {
     [Resource.BLOCKCHAIN]: [UserRole.ADMIN, UserRole.MODERATOR, UserRole.MANUFACTURER, UserRole.AUDITOR]
 };
 // Check if user has specific permission
-export const hasPermission = (userRole, permission) => {
+const hasPermission = (userRole, permission) => {
     return rolePermissions[userRole]?.includes(permission) || false;
 };
+exports.hasPermission = hasPermission;
 // Check if user can access specific resource
-export const canAccessResource = (userRole, resource) => {
+const canAccessResource = (userRole, resource) => {
     return resourceAccess[resource]?.includes(userRole) || false;
 };
+exports.canAccessResource = canAccessResource;
 // Check if user has permission for specific resource
-export const hasResourcePermission = (userRole, resource, permission) => {
-    return canAccessResource(userRole, resource) && hasPermission(userRole, permission);
+const hasResourcePermission = (userRole, resource, permission) => {
+    return (0, exports.canAccessResource)(userRole, resource) && (0, exports.hasPermission)(userRole, permission);
 };
+exports.hasResourcePermission = hasResourcePermission;
 // Permission-based middleware
-export const requirePermission = (permission) => {
+const requirePermission = (permission) => {
     return (req, res, next) => {
         if (!req.user) {
-            next(createError('Authentication required', 401));
+            next((0, errorHandler_1.createError)('Authentication required', 401));
             return;
         }
-        if (!hasPermission(req.user.role, permission)) {
+        if (!(0, exports.hasPermission)(req.user.role, permission)) {
             console.warn(`Permission denied for user ${req.user.id}: ${permission}`);
-            next(createError('Insufficient permissions', 403));
+            next((0, errorHandler_1.createError)('Insufficient permissions', 403));
             return;
         }
         next();
     };
 };
+exports.requirePermission = requirePermission;
 // Resource-based middleware
-export const requireResourceAccess = (resource) => {
+const requireResourceAccess = (resource) => {
     return (req, res, next) => {
         if (!req.user) {
-            next(createError('Authentication required', 401));
+            next((0, errorHandler_1.createError)('Authentication required', 401));
             return;
         }
-        if (!canAccessResource(req.user.role, resource)) {
+        if (!(0, exports.canAccessResource)(req.user.role, resource)) {
             console.warn(`Resource access denied for user ${req.user.id}: ${resource}`);
-            next(createError('Access denied to resource', 403));
+            next((0, errorHandler_1.createError)('Access denied to resource', 403));
             return;
         }
         next();
     };
 };
+exports.requireResourceAccess = requireResourceAccess;
 // Combined permission and resource middleware
-export const requireResourcePermission = (resource, permission) => {
+const requireResourcePermission = (resource, permission) => {
     return (req, res, next) => {
         if (!req.user) {
-            next(createError('Authentication required', 401));
+            next((0, errorHandler_1.createError)('Authentication required', 401));
             return;
         }
-        if (!hasResourcePermission(req.user.role, resource, permission)) {
+        if (!(0, exports.hasResourcePermission)(req.user.role, resource, permission)) {
             console.warn(`Resource permission denied for user ${req.user.id}: ${resource}.${permission}`);
-            next(createError('Insufficient permissions for resource', 403));
+            next((0, errorHandler_1.createError)('Insufficient permissions for resource', 403));
             return;
         }
         next();
     };
 };
+exports.requireResourcePermission = requireResourcePermission;
 // Role-based middleware
-export const requireRole = (roles) => {
+const requireRole = (roles) => {
     return (req, res, next) => {
         if (!req.user) {
-            next(createError('Authentication required', 401));
+            next((0, errorHandler_1.createError)('Authentication required', 401));
             return;
         }
         if (!roles.includes(req.user.role)) {
             console.warn(`Role access denied for user ${req.user.id}: ${req.user.role}`);
-            next(createError('Insufficient role permissions', 403));
+            next((0, errorHandler_1.createError)('Insufficient role permissions', 403));
             return;
         }
         next();
     };
 };
+exports.requireRole = requireRole;
 // Ownership-based middleware
-export const requireOwnership = (getOwnerId) => {
+const requireOwnership = (getOwnerId) => {
     return async (req, res, next) => {
         if (!req.user) {
-            next(createError('Authentication required', 401));
+            next((0, errorHandler_1.createError)('Authentication required', 401));
             return;
         }
         try {
@@ -144,47 +154,50 @@ export const requireOwnership = (getOwnerId) => {
             // Check ownership
             if (req.user.id !== ownerId) {
                 console.warn(`Ownership access denied for user ${req.user.id}: resource owned by ${ownerId}`);
-                next(createError('Access denied: not resource owner', 403));
+                next((0, errorHandler_1.createError)('Access denied: not resource owner', 403));
                 return;
             }
             next();
         }
         catch (error) {
-            next(createError('Error checking ownership', 500));
+            next((0, errorHandler_1.createError)('Error checking ownership', 500));
         }
     };
 };
+exports.requireOwnership = requireOwnership;
 // Multi-factor authentication requirement
-export const requireMFA = (req, res, next) => {
+const requireMFA = (req, res, next) => {
     if (!req.user) {
-        next(createError('Authentication required', 401));
+        next((0, errorHandler_1.createError)('Authentication required', 401));
         return;
     }
     // Check if MFA is enabled and verified
     if (req.user.mfaEnabled && !req.user.mfaVerified) {
-        next(createError('Multi-factor authentication required', 403));
+        next((0, errorHandler_1.createError)('Multi-factor authentication required', 403));
         return;
     }
     next();
 };
+exports.requireMFA = requireMFA;
 // API key validation
-export const requireApiKey = (req, res, next) => {
+const requireApiKey = (req, res, next) => {
     const apiKey = req.headers['x-api-key'];
     if (!apiKey) {
-        next(createError('API key required', 401));
+        next((0, errorHandler_1.createError)('API key required', 401));
         return;
     }
     // In a real implementation, validate against database
     const validApiKeys = process.env.VALID_API_KEYS?.split(',') || [];
     if (!validApiKeys.includes(apiKey)) {
         console.warn(`Invalid API key attempt: ${apiKey}`);
-        next(createError('Invalid API key', 401));
+        next((0, errorHandler_1.createError)('Invalid API key', 401));
         return;
     }
     next();
 };
+exports.requireApiKey = requireApiKey;
 // Rate limiting based on user role
-export const roleBasedRateLimit = (req, res, next) => {
+const roleBasedRateLimit = (req, res, next) => {
     const authReq = req;
     if (!authReq.user) {
         next();
@@ -209,8 +222,9 @@ export const roleBasedRateLimit = (req, res, next) => {
     }
     next();
 };
+exports.roleBasedRateLimit = roleBasedRateLimit;
 // Audit logging for sensitive operations
-export const auditLog = (operation, resource) => {
+const auditLog = (operation, resource) => {
     return (req, res, next) => {
         const originalSend = res.send;
         res.send = function (data) {
@@ -232,27 +246,29 @@ export const auditLog = (operation, resource) => {
         next();
     };
 };
+exports.auditLog = auditLog;
 // IP-based access control
-export const ipAccessControl = (allowedIPs, blockedIPs = []) => {
+const ipAccessControl = (allowedIPs, blockedIPs = []) => {
     return (req, res, next) => {
         const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
         // Check blocked IPs first
         if (blockedIPs.includes(clientIP)) {
             console.warn(`Blocked IP attempted access: ${clientIP}`);
-            next(createError('Access denied', 403));
+            next((0, errorHandler_1.createError)('Access denied', 403));
             return;
         }
         // Check allowed IPs if specified
         if (allowedIPs.length > 0 && !allowedIPs.includes(clientIP)) {
             console.warn(`Non-whitelisted IP attempted access: ${clientIP}`);
-            next(createError('Access denied', 403));
+            next((0, errorHandler_1.createError)('Access denied', 403));
             return;
         }
         next();
     };
 };
+exports.ipAccessControl = ipAccessControl;
 // Time-based access control
-export const timeBasedAccess = (allowedHours) => {
+const timeBasedAccess = (allowedHours) => {
     return (req, res, next) => {
         const now = new Date();
         const currentHour = now.getHours();
@@ -266,23 +282,25 @@ export const timeBasedAccess = (allowedHours) => {
             }
         });
         if (!isAllowed) {
-            next(createError('Access denied: outside allowed hours', 403));
+            next((0, errorHandler_1.createError)('Access denied: outside allowed hours', 403));
             return;
         }
         next();
     };
 };
+exports.timeBasedAccess = timeBasedAccess;
 // Geographic access control (basic implementation)
-export const geoAccessControl = (allowedCountries) => {
+const geoAccessControl = (allowedCountries) => {
     return (req, res, next) => {
         // In a real implementation, you would use a GeoIP service
         const country = req.headers['cf-ipcountry'] || 'US';
         if (allowedCountries.length > 0 && !allowedCountries.includes(country)) {
             console.warn(`Access denied from country: ${country}`);
-            next(createError('Access denied from your location', 403));
+            next((0, errorHandler_1.createError)('Access denied from your location', 403));
             return;
         }
         next();
     };
 };
+exports.geoAccessControl = geoAccessControl;
 //# sourceMappingURL=authorization.js.map

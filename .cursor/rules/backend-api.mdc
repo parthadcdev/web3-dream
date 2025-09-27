@@ -1,0 +1,95 @@
+---
+globs: backend/**/*.ts,backend/**/*.js
+---
+
+# Backend API Development
+
+## Project Structure
+- **Source**: [backend/src/](mdc:backend/src/)
+- **Routes**: [backend/src/routes/](mdc:backend/src/routes/)
+- **Middleware**: [backend/src/middleware/](mdc:backend/src/middleware/)
+- **Config**: [backend/src/config/](mdc:backend/src/config/)
+- **Database**: [backend/prisma/](mdc:backend/prisma/)
+
+## Key Files
+- **Main Server**: [backend/src/index.ts](mdc:backend/src/index.ts)
+- **Database Config**: [backend/src/config/database.ts](mdc:backend/src/config/database.ts)
+- **Security Middleware**: [backend/src/middleware/security.ts](mdc:backend/src/middleware/security.ts)
+- **Auth Middleware**: [backend/src/middleware/auth.ts](mdc:backend/src/middleware/auth.ts)
+
+## API Endpoints
+
+### Authentication & User Management
+- **User Registration**: `POST /api/users/register`
+- **User Login**: `POST /api/users/login`
+- **Wallet Authentication**: `POST /api/users/wallet-auth`
+- **User Profile**: `GET /api/users/profile`
+- **Update Profile**: `PUT /api/users/profile`
+
+### Stytch Authentication
+- **Magic Link Send**: `POST /api/stytch/magic-link/send`
+- **Magic Link Authenticate**: `POST /api/stytch/magic-link/authenticate`
+- **OTP Send**: `POST /api/stytch/otp`
+- **OTP Authenticate**: `POST /api/stytch/otp/authenticate`
+- **Session Authenticate**: `POST /api/stytch/session/authenticate`
+
+### System & Health
+- **Health Check**: `GET /api/health`
+- **Database Health**: `GET /api/database/health`
+- **Database Stats**: `GET /api/database/stats`
+
+### Products & NFT
+- **Products**: `GET /api/products`
+- **NFT**: `GET /api/nft`
+
+## Development Commands
+```bash
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Run tests
+npm test
+
+# Run security tests
+npm run test:security
+
+# Database operations
+npm run prisma:generate
+npm run prisma:migrate
+npm run db:seed
+```
+
+## Authentication Services
+
+### AuthService (`backend/src/services/authService.ts`)
+- **Password Hashing**: bcrypt with 12 salt rounds
+- **Password Validation**: Strength requirements (8+ chars, uppercase, lowercase, number, special char)
+- **JWT Generation**: Secure token creation with expiration
+- **User Registration**: Complete registration flow with validation
+- **Security Logging**: Audit trail for authentication events
+
+### StytchService (`backend/src/services/stytchService.ts`)
+- **Magic Link Authentication**: Passwordless email authentication
+- **OTP Authentication**: One-time password verification
+- **Session Management**: Secure session handling
+- **User Management**: Stytch user integration
+
+### UserService (`backend/src/services/userService.ts`)
+- **User CRUD Operations**: Create, read, update, delete users
+- **Stytch Integration**: Link Stytch users to local database
+- **Wallet Integration**: Web3 wallet address management
+
+## Security Features
+- **JWT Authentication**: Secure token-based authentication
+- **Role-based Access Control (RBAC)**: User roles (USER, MANUFACTURER, DISTRIBUTOR, RETAILER, ADMIN)
+- **Password Security**: bcrypt hashing with strength validation
+- **Rate Limiting**: API request throttling
+- **Input Validation**: express-validator for request validation
+- **SQL Injection Protection**: Prisma ORM parameterized queries
+- **XSS Protection**: Input sanitization
+- **Security Headers**: Helmet.js security middleware
+- **Audit Logging**: Security event tracking
+- **CORS Configuration**: Cross-origin request handling

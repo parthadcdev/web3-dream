@@ -1,38 +1,109 @@
 ---
 alwaysApply: true
-description: MCP server integration and Git automation tools
+description: MCP integration and Git workflow
 ---
 
-# MCP Integration Guide
+# MCP Integration for TraceChain
 
-## Unified MCP Server
-The project uses a unified MCP server ([mcp-server-unified.js](mdc:mcp-server-unified.js)) that provides:
+## MCP Server Configuration
+- **Main Server**: [mcp-server-unified.js](mdc:mcp-server-unified.js) - Unified MCP with Git operations
+- **Configuration**: [.cursor/mcp.json](mdc:.cursor/mcp.json) - Cursor MCP integration
+- **Start Script**: `./run-mcp-unified.sh start`
 
-### Git Operations & Automation
-- `git_status` - Comprehensive Git status with file analysis
-- `git_commit_smart` - Intelligent commits with context-aware messages
-- `git_create_branch` - Feature branch creation with Linear integration
-- `git_merge_smart` - Smart merge with conflict resolution
-- `git_pre_commit_review` - Pre-commit validation and checks
-- `git_log_analysis` - Git history analysis and patterns
-- `git_release_management` - Automated versioning and changelog generation
+## Git Workflow with MCP
+```bash
+# Create feature branch with Linear issue
+mcp_tracechain-unified_git_create_branch --name "feature/user-auth" --type "feature" --linear_issue_id "AXO-123"
 
-### Project Management
-- `check_project_health` - Overall project health monitoring
-- `analyze_project_structure` - Project structure analysis
-- `build_component` - Build specific components
-- `deploy_application` - Deploy to various environments
+# Smart commit with Linear integration
+mcp_tracechain-unified_git_commit_smart --message "Add user authentication" --link_linear_issue true
 
-### Linear Integration
-- `create_linear_issue` - Create Linear issues
-- `search_linear_issues` - Search and filter issues
-- `update_linear_issue` - Update issue status and details
+# Pre-commit validation
+mcp_tracechain-unified_git_pre_commit_review --include_security_scan true
 
-## Usage
-- MCP server runs automatically with Cursor
-- Use natural language commands for Git operations
-- All tools are context-aware and understand the TraceChain project
-- Linear issues are automatically linked to Git operations
+# Merge with conflict resolution
+mcp_tracechain-unified_git_merge_smart --source_branch "feature/user-auth" --target_branch "develop"
+```
 
-## Configuration
-MCP server is configured in [.cursor/mcp.json](mdc:.cursor/mcp.json) with environment variables for Linear API integration.
+## Linear Integration
+```bash
+# Create Linear issue
+mcp_tracechain-unified_create_linear_issue --title "Implement user authentication" --description "Add JWT-based authentication system" --priority "high"
+
+# Search Linear issues
+mcp_tracechain-unified_search_linear_issues --query "authentication" --status "in_progress"
+
+# Update Linear issue
+mcp_tracechain-unified_update_linear_issue --issue_id "AXO-123" --status "done"
+```
+
+## Project Management
+```bash
+# Check project health
+mcp_tracechain-unified_check_project_health --component "all"
+
+# Analyze project structure
+mcp_tracechain-unified_analyze_project_structure --depth 2 --include_dependencies true
+
+# Run security scan
+mcp_tracechain-unified_run_security_scan --scan_type "comprehensive" --include_fixes true
+```
+
+## Development Tools
+```bash
+# Build components
+mcp_tracechain-unified_build_component --component "backend" --environment "development"
+
+# Deploy application
+mcp_tracechain-unified_deploy_application --environment "staging" --provider "docker"
+
+# Monitor performance
+mcp_tracechain-unified_monitor_performance --duration 10 --include_logs true
+```
+
+## Smart Contract Operations
+```bash
+# Compile smart contracts
+mcp_tracechain-unified_compile_smart_contracts --network "mumbai"
+
+# Deploy smart contracts
+mcp_tracechain-unified_deploy_smart_contracts --network "polygon"
+
+# Analyze smart contract security
+mcp_tracechain-unified_analyze_smart_contract --contract_path "contracts/ProductRegistry.sol" --analysis_type "security"
+```
+
+## API Testing
+```bash
+# Test API endpoints
+mcp_tracechain-unified_test_api_endpoints --base_url "http://localhost:3000" --include_performance true
+
+# Validate API endpoint
+mcp_tracechain-unified_validate_api_endpoint --endpoint_path "src/routes/users.ts" --validation_type "security"
+```
+
+## Git Status and Analysis
+```bash
+# Get comprehensive Git status
+mcp_tracechain-unified_git_status --include_staged true --include_untracked true
+
+# Analyze Git history
+mcp_tracechain-unified_git_log_analysis --since "1 week ago" --include_stats true
+
+# Release management
+mcp_tracechain-unified_git_release_management --version_type "minor" --create_tag true --generate_changelog true
+```
+
+## MCP Tool Usage Guidelines
+1. **Always use MCP tools** for Git operations instead of direct git commands
+2. **Link commits to Linear issues** when possible
+3. **Run pre-commit checks** before committing
+4. **Use project health checks** regularly
+5. **Leverage security scanning** for code quality
+6. **Monitor performance** during development
+
+## Error Handling
+- MCP tools provide detailed error messages
+- Check MCP server logs for debugging
+- Use `./run-mcp-unified.sh status` to check server health
+- Restart MCP server if needed: `./run-mcp-unified.sh restart`

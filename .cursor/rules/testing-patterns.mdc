@@ -1,59 +1,310 @@
 ---
-globs: *.test.*,*.spec.*,test/**
-description: Testing patterns and conventions for TraceChain
+description: Testing patterns and conventions
 ---
 
 # Testing Patterns for TraceChain
 
-## Frontend Testing
-- Use React Testing Library for component testing
-- Test files in [frontend/src/](mdc:frontend/src/) with `.test.tsx` extension
-- Mock API calls and external dependencies
-- Test user interactions and component behavior
+## Test Structure
+```typescript
+// Backend API tests
+describe('User API', () => {
+  let app: Express;
+  let authToken: string;
+  
+  beforeAll(async () => {
+    app = await createTestApp();
+    authToken = await createTestUser();
+  });
+  
+  afterAll(async () => {
+    await cleanupTestData();
+  });
+  
+  describe('POST /api/users', () => {
+    it('should create a new user', async () => {
+      const userData = {
+        email: 'test@example.com',
+        password: 'SecurePass123!',
+        role: 'manufacturer'
+      };
+      
+      const response = await request(app)
+        .post('/api/users')
+        .send(userData)
+        .expect(201);
+        
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.email).toBe(userData.email);
+    });
+    
+    it('should validate required fields', async () => {
+      const response = await request(app)
+        .post('/api/users')
+        .send({})
+        .expect(400);
+        
+      expect(response.body.success).toBe(false);
+      expect(response.body.error).toContain('email');
+    });
 
-## Backend Testing
-- Use Jest for unit and integration tests
-- Test API endpoints with proper request/response validation
-- Mock database and external service calls
-- Test authentication and authorization flows
+    it('should require authentication for protected routes', async () => {
+      const res = await request(app).get('/api/products');
+      expect(res.statusCode).toEqual(401);
+      expect(res.body.error).toContain('No token provided');
+    });
 
-## Smart Contract Testing
-- Use Hardhat testing framework in [smart-contracts/test/](mdc:smart-contracts/test/)
-- Test all contract functions and edge cases
-- Verify access control and security measures
-- Test gas usage and optimization
-- Use fixtures for common test data
-
-## Test Organization
+    it('should allow public access to health endpoints', async () => {
+      const res = await request(app).get('/api/health');
+      expect(res.statusCode).toEqual(200);
+      expect(res.body.status).toEqual('OK');
+    });
+  });
+});
 ```
-frontend/src/
-├── components/
-│   └── ComponentName.test.tsx
-├── pages/
-│   └── PageName.test.tsx
-└── store/
-    └── sliceName.test.ts
 
-smart-contracts/test/
-├── ContractName.test.js
-└── Integration.test.js
+## Frontend Component Tests
+```typescript
+// React component tests with Testing Library
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { ProductCard } from '@/components/ProductCard';
+
+describe('ProductCard', () => {
+  const mockProduct = {
+    id: '1',
+    name: 'Test Product',
+    description: 'Test Description',
+    manufacturer: 'Test Manufacturer'
+  };
+  
+  it('renders product information correctly', () => {
+    render(<ProductCard product={mockProduct} />);
+    
+    expect(screen.getByText('Test Product')).toBeInTheDocument();
+    expect(screen.getByText('Test Description')).toBeInTheDocument();
+  });
+  
+  it('calls onEdit when edit button is clicked', async () => {
+    const mockOnEdit = jest.fn();
+    render(<ProductCard product={mockProduct} onEdit={mockOnEdit} />);
+    
+    fireEvent.click(screen.getByRole('button', { name: /edit/i }));
+    
+    expect(mockOnEdit).toHaveBeenCalledWith(mockProduct);
+  });
+});
 ```
 
-## Test Commands
-- **Frontend**: `npm test` in [frontend/](mdc:frontend/) directory
-- **Backend**: `npm test` in [backend/](mdc:backend/) directory
-- **Smart Contracts**: `npm test` in [smart-contracts/](mdc:smart-contracts/) directory
-- **All Tests**: `make test` from project root
+## Smart Contract Tests
+```javascript
+// Hardhat smart contract tests
+describe("ProductRegistry", function () {
+  let productRegistry;
+  let owner, manufacturer, retailer;
+  
+  beforeEach(async function () {
+    [owner, manufacturer, retailer] = await ethers.getSigners();
+    
+    const ProductRegistry = await ethers.getContractFactory("ProductRegistry");
+    productRegistry = await ProductRegistry.deploy();
+    await productRegistry.deployed();
+  });
+  
+  describe("Product Registration", function () {
+    it("Should register a product successfully", async function () {
+      const tx = await productRegistry
+        .connect(manufacturer)
+        .registerProduct("Test Product", "Test Description");
+        
+      await expect(tx)
+        .to.emit(productRegistry, "ProductRegistered")
+        .withArgs(1, manufacturer.address);
+        
+      const product = await productRegistry.getProduct(1);
+      expect(product.name).to.equal("Test Product");
+    });
+    
+    it("Should revert for unauthorized access", async function () {
+      await expect(
+        productRegistry
+          .connect(retailer)
+          .registerProduct("Test Product", "Test Description")
+      ).to.be.revertedWith("Not a manufacturer");
+    });
+  });
+});
+```
 
-## MCP Testing Tools
-Use MCP tools for comprehensive testing:
-- `run_security_scan` - Security vulnerability scanning
-- `generate_test_suite` - Generate test suites for components
-- `run_health_checks` - Verify system health
-- `git_pre_commit_review` - Pre-commit validation
+## Integration Tests
+```typescript
+// End-to-end integration tests
+describe('Product Traceability Flow', () => {
+  it('should complete full product lifecycle', async () => {
+    // 1. Create manufacturer account
+    const manufacturer = await createUser('manufacturer');
+    
+    // 2. Register product
+    const product = await registerProduct(manufacturer, {
+      name: 'Test Product',
+      description: 'Test Description'
+    });
+    
+    // 3. Add checkpoints
+    await addCheckpoint(product.id, {
+      location: 'Manufacturing',
+      status: 'completed'
+    });
+    
+    await addCheckpoint(product.id, {
+      location: 'Distribution',
+      status: 'in_transit'
+    });
+    
+    // 4. Verify traceability
+    const trace = await getProductTrace(product.id);
+    expect(trace.checkpoints).toHaveLength(2);
+    expect(trace.checkpoints[0].location).toBe('Manufacturing');
+  });
+});
+```
 
-## Test Data
-- Use consistent test data across all test suites
-- Mock external API responses
-- Use factories for creating test objects
-- Clean up test data after each test
+## Database Tests
+```typescript
+// Database integration tests
+describe('Database Operations', () => {
+  beforeEach(async () => {
+    await prisma.$connect();
+    await cleanupDatabase();
+  });
+  
+  afterEach(async () => {
+    await cleanupDatabase();
+    await prisma.$disconnect();
+  });
+  
+  it('should create user with proper relationships', async () => {
+    const user = await prisma.user.create({
+      data: {
+        email: 'test@example.com',
+        password: await bcrypt.hash('password', 12),
+        role: 'manufacturer'
+      }
+    });
+    
+    expect(user.id).toBeDefined();
+    expect(user.email).toBe('test@example.com');
+    expect(user.role).toBe('manufacturer');
+  });
+});
+```
+
+## Mock Patterns
+```typescript
+// Mock external services
+jest.mock('@/services/blockchain', () => ({
+  deployContract: jest.fn(),
+  callContractMethod: jest.fn(),
+  getContractAddress: jest.fn()
+}));
+
+// Mock Prisma client
+const mockPrisma = {
+  user: {
+    create: jest.fn(),
+    findUnique: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn()
+  },
+  product: {
+    create: jest.fn(),
+    findMany: jest.fn(),
+    update: jest.fn()
+  }
+} as any;
+
+jest.mock('@/lib/prisma', () => ({
+  prisma: mockPrisma
+}));
+```
+
+## Test Utilities
+```typescript
+// Test helper functions
+export const createTestUser = async (role: string = 'manufacturer') => {
+  const user = await prisma.user.create({
+    data: {
+      email: `test-${Date.now()}@example.com`,
+      password: await bcrypt.hash('password', 12),
+      role
+    }
+  });
+  return user;
+};
+
+export const createTestProduct = async (manufacturerId: string) => {
+  const product = await prisma.product.create({
+    data: {
+      name: `Test Product ${Date.now()}`,
+      description: 'Test Description',
+      manufacturerId,
+      batchNumber: `BATCH-${Date.now()}`
+    }
+  });
+  return product;
+};
+
+export const cleanupDatabase = async () => {
+  await prisma.auditLog.deleteMany();
+  await prisma.checkpoint.deleteMany();
+  await prisma.product.deleteMany();
+  await prisma.user.deleteMany();
+};
+```
+
+## Performance Tests
+```typescript
+// Load testing with Artillery
+describe('API Performance', () => {
+  it('should handle 100 concurrent requests', async () => {
+    const promises = Array.from({ length: 100 }, () =>
+      request(app)
+        .get('/api/products')
+        .set('Authorization', `Bearer ${authToken}`)
+    );
+    
+    const responses = await Promise.all(promises);
+    
+    responses.forEach(response => {
+      expect(response.status).toBe(200);
+    });
+    
+    const avgResponseTime = responses.reduce((sum, res) => 
+      sum + res.headers['x-response-time'], 0) / responses.length;
+    
+    expect(avgResponseTime).toBeLessThan(1000); // 1 second
+  });
+});
+```
+
+## Test Configuration
+```json
+// jest.config.js
+module.exports = {
+  preset: 'ts-jest',
+  testEnvironment: 'node',
+  roots: ['<rootDir>/src'],
+  testMatch: ['**/__tests__/**/*.test.ts'],
+  collectCoverageFrom: [
+    'src/**/*.ts',
+    '!src/**/*.d.ts',
+    '!src/index.ts'
+  ],
+  coverageThreshold: {
+    global: {
+      branches: 80,
+      functions: 80,
+      lines: 80,
+      statements: 80
+    }
+  }
+};
+```

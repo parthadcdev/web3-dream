@@ -1,0 +1,183 @@
+---
+description: Deployment patterns and infrastructure
+---
+
+# Deployment Patterns for TraceChain
+
+## Build Process
+```bash
+# Build all components
+make build
+
+# Individual component builds
+cd backend && npm run build
+cd frontend && npm run build
+cd smart-contracts && npx hardhat compile
+```
+
+## Current Production Setup
+```bash
+# Backend (Port 3000)
+cd backend && npm run build && npm start
+
+# Frontend (Port 3001)
+cd frontend && npm run build
+cd frontend/build && python3 -m http.server 3001
+
+# Database: Neon PostgreSQL (external)
+# Authentication: JWT middleware
+```
+
+## Docker Deployment
+```dockerfile
+# Multi-stage builds for optimization
+FROM node:18-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production
+
+FROM node:18-alpine AS runtime
+WORKDIR /app
+COPY --from=builder /app/node_modules ./node_modules
+COPY . .
+EXPOSE 3000
+CMD ["npm", "start"]
+```
+
+## Environment Configuration
+```bash
+# Production environment variables
+NODE_ENV=production
+PORT=3000
+DATABASE_URL=postgresql://user:pass@host:port/db?sslmode=require
+JWT_SECRET=your-production-secret
+REDIS_URL=redis://redis:6379
+```
+
+## Health Checks
+- Ensure `/api/health` and `/api/database/health` endpoints are accessible and return `200 OK`.
+- Configure load balancers/orchestrators to use these endpoints for health checks.
+
+## Port Configuration
+- **Backend API**: Port 3000 (Express server)
+- **Frontend**: Port 3001 (Static files served via Python HTTP server)
+- **Smart Contracts**: Port 8545 (Hardhat local node)
+- **Database**: External Neon PostgreSQL
+
+## Authentication & Security
+- **JWT Tokens**: Required for protected endpoints
+- **Protected Routes**: `/api/products`, `/api/database/stats`, etc.
+- **Public Routes**: `/api/health`, `/api/database/health`
+- **CORS**: Configured for localhost:3001 (frontend)
+
+```typescript
+// Implement health check endpoints
+app.get('/health', async (req, res) => {
+  const health = {
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    database: await checkDatabaseConnection(),
+    redis: await checkRedisConnection()
+  };
+  
+  res.status(health.database && health.redis ? 200 : 503).json(health);
+});
+```
+
+## Monitoring Setup
+```yaml
+# docker-compose.prod.yml
+version: '3.8'
+services:
+  backend:
+    build: ./backend
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=${DATABASE_URL}
+    depends_on:
+      - redis
+    restart: unless-stopped
+    
+  frontend:
+    build: ./frontend
+    ports:
+      - "80:80"
+    restart: unless-stopped
+    
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infrastructure/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    restart: unless-stopped
+    
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    restart: unless-stopped
+```
+
+## CI/CD Pipeline
+```yaml
+# .github/workflows/deploy.yml
+name: Deploy to Production
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build and Deploy
+        run: |
+          docker-compose -f docker-compose.prod.yml build
+          docker-compose -f docker-compose.prod.yml up -d
+      - name: Health Check
+        run: |
+          sleep 30
+          curl -f http://localhost/health || exit 1
+```
+
+## Database Migrations
+```bash
+# Production migration process
+cd backend
+npx prisma migrate deploy
+npx prisma generate
+```
+
+## Smart Contract Deployment
+```bash
+# Deploy to production network
+cd smart-contracts
+npx hardhat run scripts/deploy.js --network polygon
+npx hardhat verify --network polygon <contract-address>
+```
+
+## Rollback Procedures
+```bash
+# Database rollback
+npx prisma migrate rollback
+
+# Application rollback
+docker-compose -f docker-compose.prod.yml down
+docker-compose -f docker-compose.backup.yml up -d
+```
+
+## Security Considerations
+- Use secrets management for production credentials
+- Enable SSL/TLS for all communications
+- Implement proper backup strategies
+- Monitor for security vulnerabilities
+- Use container security scanning

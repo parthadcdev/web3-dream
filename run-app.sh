@@ -64,7 +64,7 @@ show_help() {
     echo ""
     echo "Modes:"
     echo "  all                  Run all services (default)"
-    echo "  services             Run Podman services only"
+    echo "  services             Run Redis and other services only"
     echo "  smart-contracts      Run Hardhat node only"
     echo "  backend              Run backend API only"
     echo "  frontend             Run frontend only"
@@ -121,9 +121,9 @@ wait_for_service() {
     return 1
 }
 
-# Function to start Docker services
+# Function to start services
 start_services() {
-    print_header "Starting Podman Services"
+    print_header "Starting Services (Redis, MQTT, etc.)"
     
     if [ ! -f "$PROJECT_ROOT/docker-compose.yml" ]; then
         print_error "Docker Compose file not found"
@@ -136,7 +136,7 @@ start_services() {
         return 1
     fi
     
-    print_info "Starting Podman services..."
+    print_info "Starting services (Redis, MQTT, etc.)..."
     
     case "$RUN_ENV" in
         "production")
@@ -151,16 +151,15 @@ start_services() {
     esac
     
     if [ $? -eq 0 ]; then
-        print_status "Podman services started"
+        print_status "Services started"
         
         # Wait for critical services
         sleep 5
-        wait_for_service "http://localhost:5432" "PostgreSQL" || true
         wait_for_service "http://localhost:6379" "Redis" || true
         
-        print_status "Docker services are running"
+        print_status "Services are running"
     else
-        print_error "Failed to start Docker services"
+        print_error "Failed to start services"
         return 1
     fi
 }
@@ -219,7 +218,7 @@ start_backend() {
     # Set environment variables
     export NODE_ENV="$RUN_ENV"
     export PORT="$RUN_PORT_BACKEND"
-    export DATABASE_URL="postgresql://tracechain_user:tracechain_password@localhost:5432/tracechain_db"
+    export DATABASE_URL="${DATABASE_URL:-postgresql://username:password@ep-xxx-xxx.us-east-1.aws.neon.tech/tracechain_db?sslmode=require}"
     export REDIS_URL="redis://localhost:6379"
     export JWT_SECRET="tracechain-jwt-secret-dev"
     export POLYGON_RPC_URL="http://localhost:$RUN_PORT_HARDHAT"
@@ -332,8 +331,8 @@ stop_all() {
         rm -f "$PID_DIR/hardhat.pid"
     fi
     
-    # Stop Podman services
-    print_info "Stopping Podman services..."
+    # Stop services
+    print_info "Stopping services..."
     podman-compose down 2>/dev/null || true
     
     print_status "All services stopped"
@@ -343,9 +342,9 @@ stop_all() {
 show_status() {
     print_header "Service Status"
     
-    # Check Podman services
-    print_info "Podman Services:"
-    podman-compose ps 2>/dev/null || print_warning "Podman services not running"
+    # Check services
+    print_info "Services:"
+    podman-compose ps 2>/dev/null || print_warning "Services not running"
     
     # Check individual processes
     echo ""
@@ -492,7 +491,7 @@ run_all() {
         echo "  • Frontend: http://localhost:$RUN_PORT_FRONTEND"
         echo "  • Backend API: http://localhost:$RUN_PORT_BACKEND"
         echo "  • Hardhat Node: http://localhost:$RUN_PORT_HARDHAT"
-        echo "  • Database: localhost:5432"
+        echo "  • Database: Neon PostgreSQL (serverless)"
         echo "  • Redis: localhost:6379"
         echo "  • MQTT: localhost:1883"
         echo ""

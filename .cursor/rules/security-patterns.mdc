@@ -1,59 +1,253 @@
 ---
 alwaysApply: true
-description: Security patterns and best practices for TraceChain
+description: Security patterns and best practices
 ---
 
 # Security Patterns for TraceChain
 
 ## Authentication & Authorization
-- Use JWT tokens for API authentication
-- Implement proper session management
-- Validate all user inputs and API requests
-- Use role-based access control (RBAC)
 
-## Smart Contract Security
-- Follow OpenZeppelin security patterns
-- Implement proper access control with modifiers
-- Use `ReentrancyGuard` for external calls
-- Validate all inputs with `require()` statements
-- Emit events for transparency and auditing
+### Multi-Provider Authentication
+TraceChain supports multiple authentication methods:
 
-## API Security
-- Implement rate limiting for API endpoints
-- Use HTTPS in production environments
-- Validate and sanitize all inputs
-- Implement proper error handling without information leakage
-- Use CORS configuration appropriately
+1. **Traditional Email/Password** (`AuthService`)
+   - Password hashing with bcrypt (12 salt rounds)
+   - Password strength validation
+   - JWT token generation
+   - User registration and login
 
-## Data Protection
-- Encrypt sensitive data at rest
-- Use secure communication protocols
-- Implement proper data validation
-- Follow GDPR and privacy regulations
-- Secure database connections
+2. **Stytch Identity Provider** (`StytchService`)
+   - Magic link authentication (passwordless)
+   - OTP (One-Time Password) authentication
+   - Session management
+   - User profile integration
 
-## MCP Security Tools
-Use integrated security tools:
-- `run_security_scan` - Comprehensive security analysis
-- `validate_api_endpoint` - API security validation
-- `git_pre_commit_review` - Pre-commit security checks
+3. **Web3 Wallet Authentication**
+   - MetaMask integration
+   - Signature verification
+   - Wallet address linking
 
-## Security Checklist
-- [ ] Input validation on all endpoints
-- [ ] Authentication on protected routes
-- [ ] Rate limiting implemented
-- [ ] HTTPS enabled in production
-- [ ] Database queries parameterized
-- [ ] Error messages don't leak information
-- [ ] Dependencies regularly updated
-- [ ] Security headers configured
-- [ ] Logging and monitoring in place
+### Role-based Access Control (RBAC)
+- **USER**: Basic user access
+- **MANUFACTURER**: Product creation and management
+- **DISTRIBUTOR**: Supply chain management
+- **RETAILER**: Retail operations
+- **ADMIN**: System administration
 
-## Common Vulnerabilities to Avoid
-- SQL injection attacks
-- XSS (Cross-Site Scripting)
-- CSRF (Cross-Site Request Forgery)
-- Insecure direct object references
-- Security misconfiguration
-- Sensitive data exposure
-- Insufficient logging and monitoring
+### Current Authentication Status
+- **Protected Endpoints**: `/api/products`, `/api/database/stats`, `/api/users`
+- **Public Endpoints**: `/api/health`, `/api/database/health`
+- **Registration Endpoint**: `POST /api/users/register` (public)
+- **Stytch Endpoints**: `/api/stytch/*` (public)
+- **Frontend Integration**: Requires JWT token in Authorization header
+- **Error Responses**: 401 Unauthorized for missing/invalid tokens
+
+## Input Validation
+```typescript
+// Always validate input data
+import Joi from 'joi';
+
+const userSchema = Joi.object({
+  email: Joi.string().email().required(),
+  password: Joi.string().min(8).pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/).required(),
+  role: Joi.string().valid('admin', 'manufacturer', 'retailer', 'consumer').required()
+});
+
+// Use in route handlers
+const { error, value } = userSchema.validate(req.body);
+if (error) {
+  return res.status(400).json({ success: false, error: error.details[0].message });
+}
+```
+
+## SQL Injection Prevention
+- **Use Prisma**: Always use Prisma ORM for database queries
+- **Parameterized Queries**: Never concatenate user input into SQL
+- **Input Sanitization**: Sanitize all user inputs before database operations
+
+## XSS Protection
+```typescript
+// Sanitize user input
+import DOMPurify from 'isomorphic-dompurify';
+
+const sanitizeInput = (input: string): string => {
+  return DOMPurify.sanitize(input);
+};
+
+// Use in API handlers
+const sanitizedDescription = sanitizeInput(req.body.description);
+```
+
+## CORS Configuration
+```typescript
+// Configure CORS properly
+app.use(cors({
+  origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3001'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+```
+
+## Rate Limiting
+```typescript
+// Implement rate limiting
+import rateLimit from 'express-rate-limit';
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP'
+});
+
+app.use('/api/', limiter);
+```
+
+## Security Headers
+```typescript
+// Use helmet for security headers
+import helmet from 'helmet';
+
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:"]
+    }
+  },
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true
+  }
+}));
+```
+
+## Environment Variables
+```typescript
+// Never commit secrets
+// Use environment variables for all sensitive data
+const config = {
+  // JWT Configuration
+  jwtSecret: process.env.JWT_SECRET || 'fallback-secret',
+  jwtExpiresIn: process.env.JWT_EXPIRES_IN || '24h',
+  
+  // Database Configuration
+  databaseUrl: process.env.DATABASE_URL,
+  
+  // Stytch Configuration
+  stytchProjectId: process.env.STYTCH_PROJECT_ID,
+  stytchSecret: process.env.STYTCH_SECRET,
+  stytchEnvironment: process.env.STYTCH_ENVIRONMENT || 'test',
+  
+  // Blockchain Configuration
+  polygonRpcUrl: process.env.POLYGON_RPC_URL,
+  mumbaiRpcUrl: process.env.MUMBAI_RPC_URL,
+  privateKey: process.env.PRIVATE_KEY,
+  
+  // Redis Configuration
+  redisUrl: process.env.REDIS_URL,
+  
+  // CORS Configuration
+  allowedOrigins: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3001']
+};
+
+// Validate required environment variables
+const requiredEnvVars = [
+  'JWT_SECRET', 
+  'DATABASE_URL',
+  'STYTCH_PROJECT_ID',
+  'STYTCH_SECRET'
+];
+requiredEnvVars.forEach(envVar => {
+  if (!process.env[envVar]) {
+    throw new Error(`Missing required environment variable: ${envVar}`);
+  }
+});
+```
+
+## Audit Logging
+```typescript
+// Log all security-relevant events
+interface SecurityEvent {
+  type: 'auth_failure' | 'permission_denied' | 'suspicious_activity';
+  userId?: string;
+  ip: string;
+  userAgent: string;
+  endpoint: string;
+  timestamp: Date;
+  details: Record<string, any>;
+}
+
+const logSecurityEvent = (event: SecurityEvent) => {
+  logger.warn('Security Event', event);
+  // Store in database for audit trail
+  prisma.securityEvent.create({ data: event });
+};
+```
+
+## Blockchain Security
+```typescript
+// Smart contract interaction security
+const validateContractCall = async (contractAddress: string, functionName: string, params: any[]) => {
+  // Validate contract address format
+  if (!ethers.utils.isAddress(contractAddress)) {
+    throw new Error('Invalid contract address');
+  }
+  
+  // Validate function parameters
+  const contract = new ethers.Contract(contractAddress, abi, signer);
+  const functionAbi = contract.interface.getFunction(functionName);
+  
+  // Type check parameters
+  if (functionAbi.inputs.length !== params.length) {
+    throw new Error('Parameter count mismatch');
+  }
+  
+  return true;
+};
+```
+
+## File Upload Security
+```typescript
+// Secure file upload handling
+import multer from 'multer';
+import path from 'path';
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type'), false);
+    }
+  }
+});
+```
+
+## Error Handling
+```typescript
+// Don't expose sensitive information in errors
+const handleError = (error: Error, req: Request, res: Response) => {
+  logger.error('API Error:', {
+    message: error.message,
+    stack: error.stack,
+    url: req.url,
+    method: req.method,
+    ip: req.ip
+  });
+  
+  // Return generic error message to client
+  res.status(500).json({
+    success: false,
+    error: 'Internal server error'
+  });
+};
+```

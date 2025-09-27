@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import { createError } from './errorHandler.js';
-import { AuthRequest } from './auth.js';
+import { createError } from './errorHandler';
+import { AuthRequest } from './auth';
 
 // Role-based access control
 export enum UserRole {

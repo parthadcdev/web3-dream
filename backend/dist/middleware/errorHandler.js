@@ -1,4 +1,7 @@
-export const errorHandler = (error, req, res, next) => {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.asyncHandler = exports.createError = exports.errorHandler = void 0;
+const errorHandler = (error, req, res, next) => {
     let { statusCode = 500, message } = error;
     // Log error for debugging
     console.error('Error:', {
@@ -41,15 +44,18 @@ export const errorHandler = (error, req, res, next) => {
         }
     });
 };
-export const createError = (message, statusCode = 500) => {
+exports.errorHandler = errorHandler;
+const createError = (message, statusCode = 500) => {
     const error = new Error(message);
     error.statusCode = statusCode;
     error.isOperational = true;
     return error;
 };
-export const asyncHandler = (fn) => {
+exports.createError = createError;
+const asyncHandler = (fn) => {
     return (req, res, next) => {
         Promise.resolve(fn(req, res, next)).catch(next);
     };
 };
+exports.asyncHandler = asyncHandler;
 //# sourceMappingURL=errorHandler.js.map

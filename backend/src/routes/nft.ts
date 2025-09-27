@@ -9,12 +9,12 @@ import {
   UserRole,
   Resource,
   Permission
-} from '../middleware/authorization.js';
+} from '../middleware/authorization';
 import { 
   validate, 
   sanitize, 
   validationGroups 
-} from '../middleware/validation.js';
+} from '../middleware/validation';
 
 // Extend Request interface to include user
 interface AuthenticatedRequest extends Request {
@@ -90,10 +90,10 @@ router.get('/certificates',
   try {
     // In a real implementation, this would query the database
     // For now, return mock data
-    res.json(mockCertificates);
+    return res.json(mockCertificates);
   } catch (error) {
     console.error('Error fetching certificates:', error);
-    res.status(500).json({ error: { message: 'Failed to fetch certificates' } });
+    return res.status(500).json({ error: { message: 'Failed to fetch certificates' } });
   }
 });
 
@@ -107,10 +107,10 @@ router.get('/certificates/:tokenId', authMiddleware, async (req: AuthenticatedRe
       return res.status(404).json({ error: { message: 'Certificate not found' } });
     }
     
-    res.json(certificate);
+    return res.json(certificate);
   } catch (error) {
     console.error('Error fetching certificate:', error);
-    res.status(500).json({ error: { message: 'Failed to fetch certificate' } });
+    return res.status(500).json({ error: { message: 'Failed to fetch certificate' } });
   }
 });
 
@@ -169,7 +169,7 @@ router.post('/mint',
     // 3. Store the certificate data in the database
     // 4. Upload metadata to IPFS
     
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       tokenId,
       verificationCode,
@@ -177,7 +177,7 @@ router.post('/mint',
     });
   } catch (error) {
     console.error('Error minting certificate:', error);
-    res.status(500).json({ error: { message: 'Failed to mint certificate' } });
+    return res.status(500).json({ error: { message: 'Failed to mint certificate' } });
   }
 });
 
@@ -207,7 +207,7 @@ router.post('/verify/:code', authMiddleware, async (req: AuthenticatedRequest, r
     // 2. Record the verification event
     // 3. Update the database
     
-    res.json({
+    return res.json({
       isValid,
       certificate: {
         tokenId: certificate.tokenId,
@@ -229,7 +229,7 @@ router.post('/verify/:code', authMiddleware, async (req: AuthenticatedRequest, r
     });
   } catch (error) {
     console.error('Error verifying certificate:', error);
-    res.status(500).json({ error: { message: 'Failed to verify certificate' } });
+    return res.status(500).json({ error: { message: 'Failed to verify certificate' } });
   }
 });
 
@@ -239,10 +239,10 @@ router.get('/certificates/product/:productId', authMiddleware, async (req: Authe
     const { productId } = req.params;
     const productCertificates = mockCertificates.filter(cert => cert.productId === productId);
     
-    res.json(productCertificates);
+    return res.json(productCertificates);
   } catch (error) {
     console.error('Error fetching product certificates:', error);
-    res.status(500).json({ error: { message: 'Failed to fetch product certificates' } });
+    return res.status(500).json({ error: { message: 'Failed to fetch product certificates' } });
   }
 });
 
@@ -258,13 +258,13 @@ router.put('/certificates/:tokenId/star', authMiddleware, async (req: Authentica
     
     certificate.isStarred = !certificate.isStarred;
     
-    res.json({
+    return res.json({
       success: true,
       isStarred: certificate.isStarred
     });
   } catch (error) {
     console.error('Error updating star status:', error);
-    res.status(500).json({ error: { message: 'Failed to update star status' } });
+    return res.status(500).json({ error: { message: 'Failed to update star status' } });
   }
 });
 
@@ -281,13 +281,13 @@ router.delete('/certificates/:tokenId', authMiddleware, async (req: Authenticate
     // In a real implementation, this would call the smart contract to invalidate
     certificate.isValid = false;
     
-    res.json({
+    return res.json({
       success: true,
       message: 'Certificate invalidated successfully'
     });
   } catch (error) {
     console.error('Error invalidating certificate:', error);
-    res.status(500).json({ error: { message: 'Failed to invalidate certificate' } });
+    return res.status(500).json({ error: { message: 'Failed to invalidate certificate' } });
   }
 });
 
@@ -306,7 +306,7 @@ router.get('/stats', authMiddleware, async (req: AuthenticatedRequest, res: Resp
       return acc;
     }, {} as Record<string, number>);
     
-    res.json({
+    return res.json({
       totalCertificates,
       validCertificates,
       expiredCertificates,
@@ -315,7 +315,7 @@ router.get('/stats', authMiddleware, async (req: AuthenticatedRequest, res: Resp
     });
   } catch (error) {
     console.error('Error fetching stats:', error);
-    res.status(500).json({ error: { message: 'Failed to fetch statistics' } });
+    return res.status(500).json({ error: { message: 'Failed to fetch statistics' } });
   }
 });
 

@@ -1,0 +1,553 @@
+---
+globs: *.tsx,*.jsx,src/pages/**/*,src/components/**/*
+description: Frontend React patterns and conventions
+---
+
+# Frontend React Patterns for TraceChain
+
+## Component Structure
+```typescript
+// Standard component with TypeScript
+import React, { useState, useEffect } from 'react';
+import {
+  Card,
+  CardContent,
+  Typography,
+  Button,
+  Box
+} from '@mui/material';
+
+interface ProductCardProps {
+  product: Product;
+  onEdit?: (product: Product) => void;
+  onDelete?: (id: string) => void;
+}
+
+export const ProductCard: React.FC<ProductCardProps> = ({
+  product,
+  onEdit,
+  onDelete
+}) => {
+  const [loading, setLoading] = useState(false);
+
+  const handleEdit = () => {
+    if (onEdit) {
+      onEdit(product);
+    }
+  };
+
+  return (
+    <Card>
+      <CardContent>
+        <Typography variant="h6">{product.name}</Typography>
+        <Typography variant="body2">{product.description}</Typography>
+        <Box sx={{ mt: 2 }}>
+          <Button onClick={handleEdit} disabled={loading}>
+            Edit
+          </Button>
+        </Box>
+      </CardContent>
+    </Card>
+  );
+};
+```
+
+## API Integration
+```typescript
+// API service with proper error handling
+import axios from 'axios';
+
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+
+export const apiService = {
+  async getProducts(): Promise<Product[]> {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/products`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      return response.data.data;
+    } catch (error) {
+      console.error('Failed to fetch products:', error);
+      throw error;
+    }
+  },
+
+  async createProduct(product: CreateProductRequest): Promise<Product> {
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/api/products`,
+        product,
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      return response.data.data;
+    } catch (error) {
+      console.error('Failed to create product:', error);
+      throw error;
+    }
+  }
+};
+```
+
+## State Management
+```typescript
+// Custom hooks for state management
+import { useState, useEffect } from 'react';
+
+export const useProducts = () => {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchProducts = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await apiService.getProducts();
+      setProducts(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch products');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  return { products, loading, error, refetch: fetchProducts };
+};
+
+// Form handling with validation
+export const useProductForm = (initialData?: Product) => {
+  const [formData, setFormData] = useState({
+    name: initialData?.name || '',
+    description: initialData?.description || '',
+    batchNumber: initialData?.batchNumber || ''
+  });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const validate = () => {
+    const newErrors: Record<string, string> = {};
+    
+    if (!formData.name.trim()) {
+      newErrors.name = 'Product name is required';
+    }
+    
+    if (!formData.batchNumber.trim()) {
+      newErrors.batchNumber = 'Batch number is required';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
+
+  return { formData, errors, handleChange, validate };
+};
+```
+
+## Material-UI Patterns
+```typescript
+// Consistent styling with Material-UI
+import { makeStyles, createStyles, Theme } from '@mui/material/styles';
+
+const useStyles = makeStyles((theme: Theme) =>
+  createStyles({
+    root: {
+      padding: theme.spacing(3),
+      maxWidth: 1200,
+      margin: '0 auto'
+    },
+    card: {
+      marginBottom: theme.spacing(2),
+      '&:hover': {
+        boxShadow: theme.shadows[4]
+      }
+    },
+    button: {
+      marginRight: theme.spacing(1),
+      '&:last-child': {
+        marginRight: 0
+      }
+    }
+  })
+);
+
+export const ProductList: React.FC = () => {
+  const classes = useStyles();
+  const { products, loading, error } = useProducts();
+
+  if (loading) return <CircularProgress />;
+  if (error) return <Alert severity="error">{error}</Alert>;
+
+  return (
+    <Box className={classes.root}>
+      <Typography variant="h4" gutterBottom>
+        Products
+      </Typography>
+      {products.map(product => (
+        <Card key={product.id} className={classes.card}>
+          <CardContent>
+            <ProductCard product={product} />
+          </CardContent>
+        </Card>
+      ))}
+    </Box>
+  );
+};
+```
+
+## Authentication Patterns
+
+### Multi-Provider Authentication Context
+```typescript
+// Auth context with multiple authentication methods
+import React, { createContext, useContext, useState, useEffect } from 'react';
+
+interface User {
+  id: string;
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  role: string;
+  walletAddress?: string;
+}
+
+interface AuthContextType {
+  user: User | null;
+  login: (email: string, password: string) => Promise<void>;
+  register: (userData: RegisterData) => Promise<void>;
+  loginWithWallet: (walletAddress: string, signature: string, message: string) => Promise<void>;
+  loginWithStytch: (token: string, user: any) => void;
+  logout: () => void;
+  isLoading: boolean;
+  isAuthenticated: boolean;
+}
+
+interface RegisterData {
+  email: string;
+  password: string;
+  firstName?: string;
+  lastName?: string;
+  role?: string;
+  walletAddress?: string;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Check for existing authentication on mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const token = localStorage.getItem('authToken');
+        if (token) {
+          // TODO: Verify token with backend
+          const userData = localStorage.getItem('userData');
+          if (userData) {
+            setUser(JSON.parse(userData));
+          }
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error);
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('userData');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkAuth();
+  }, []);
+
+  const login = async (email: string, password: string) => {
+    try {
+      setIsLoading(true);
+      
+      // Try API call to backend first
+      try {
+        const response = await fetch('http://localhost:3000/api/users/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email, password }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          localStorage.setItem('authToken', data.token);
+          localStorage.setItem('userData', JSON.stringify(data.user));
+          setUser(data.user);
+          return;
+        }
+      } catch (apiError) {
+        console.log('Backend not available, using mock authentication');
+      }
+
+      // Fallback to mock authentication
+      if (email && password) {
+        const mockUser: User = {
+          id: '1',
+          email: email,
+          role: 'admin'
+        };
+        
+        const mockToken = 'mock-jwt-token-' + Date.now();
+        localStorage.setItem('authToken', mockToken);
+        localStorage.setItem('userData', JSON.stringify(mockUser));
+        setUser(mockUser);
+      } else {
+        throw new Error('Email and password are required');
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const register = async (userData: RegisterData) => {
+    try {
+      setIsLoading(true);
+      
+      // Try API call to backend first
+      try {
+        const response = await fetch('http://localhost:3000/api/users/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(userData),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          localStorage.setItem('authToken', data.token);
+          localStorage.setItem('userData', JSON.stringify(data.user));
+          setUser(data.user);
+          return;
+        } else {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Registration failed');
+        }
+      } catch (apiError) {
+        console.log('Backend not available, using mock registration');
+      }
+
+      // Fallback to mock registration
+      const mockUser: User = {
+        id: '1',
+        email: userData.email,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        role: userData.role || 'admin',
+        walletAddress: userData.walletAddress
+      };
+      
+      const mockToken = 'mock-jwt-token-' + Date.now();
+      localStorage.setItem('authToken', mockToken);
+      localStorage.setItem('userData', JSON.stringify(mockUser));
+      setUser(mockUser);
+    } catch (error) {
+      console.error('Registration error:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loginWithWallet = async (walletAddress: string, signature: string, message: string) => {
+    try {
+      setIsLoading(true);
+      
+      // Try API call to backend first
+      try {
+        const response = await fetch('http://localhost:3000/api/users/wallet-auth', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ walletAddress, signature, message }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          localStorage.setItem('authToken', data.token);
+          localStorage.setItem('userData', JSON.stringify(data.user));
+          setUser(data.user);
+          return;
+        }
+      } catch (apiError) {
+        console.log('Backend not available, using mock wallet authentication');
+      }
+
+      // Fallback to mock authentication
+      const mockUser: User = {
+        id: '1',
+        email: 'wallet@demo.com',
+        role: 'admin',
+        walletAddress: walletAddress
+      };
+      
+      const mockToken = 'mock-jwt-token-' + Date.now();
+      localStorage.setItem('authToken', mockToken);
+      localStorage.setItem('userData', JSON.stringify(mockUser));
+      setUser(mockUser);
+    } catch (error) {
+      console.error('Wallet auth error:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loginWithStytch = (token: string, userData: any) => {
+    localStorage.setItem('authToken', token);
+    localStorage.setItem('userData', JSON.stringify(userData));
+    setUser(userData);
+  };
+
+  const logout = () => {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userData');
+    localStorage.removeItem('stytchSession');
+    setUser(null);
+  };
+
+  const value: AuthContextType = {
+    user,
+    login,
+    register,
+    loginWithWallet,
+    loginWithStytch,
+    logout,
+    isLoading,
+    isAuthenticated: !!user,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
+
+export const useAuth = (): AuthContextType => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
+```
+
+### Registration Form Component
+```typescript
+// Multi-step registration form with validation
+import React, { useState } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
+
+const Register: React.FC = () => {
+  const { register, isLoading } = useAuth();
+  const navigate = useNavigate();
+  
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+    confirmPassword: '',
+    firstName: '',
+    lastName: '',
+    role: 'USER',
+    walletAddress: ''
+  });
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async () => {
+    try {
+      setError(null);
+
+      // Validate form data
+      if (formData.password !== formData.confirmPassword) {
+        setError('Passwords do not match');
+        return;
+      }
+
+      if (formData.password.length < 8) {
+        setError('Password must be at least 8 characters long');
+        return;
+      }
+
+      // Validate password strength
+      const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+      if (!passwordRegex.test(formData.password)) {
+        setError('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character');
+        return;
+      }
+
+      // Call the register function from AuthContext
+      await register({
+        email: formData.email,
+        password: formData.password,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        role: formData.role,
+        walletAddress: formData.walletAddress
+      });
+      
+      // Navigate to dashboard on successful registration
+      navigate('/dashboard');
+    } catch (err: any) {
+      setError(err.message || 'Registration failed. Please try again.');
+    }
+  };
+
+  return (
+    // Form JSX with validation and error handling
+  );
+};
+```
+
+## Build and Development
+```bash
+# Frontend development commands
+npm start          # Development server (may have port conflicts)
+npm run build      # Production build
+npm run test       # Run tests
+npm run lint       # ESLint check
+
+# Serving production build
+cd build && python3 -m http.server 3001
+```
+
+## Common Issues and Solutions
+
+### Port Conflicts
+- React dev server tries to use port 3000 by default
+- Backend already uses port 3000
+- Solution: Use production build served on port 3001
+
+### ESLint Warnings
+- Remove unused imports and variables
+- Add missing dependencies to useEffect arrays
+- Use proper TypeScript types
+
+### API Integration
+- Always handle authentication tokens
+- Implement proper error handling
+- Use environment variables for API URLs

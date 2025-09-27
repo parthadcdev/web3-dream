@@ -1,18 +1,24 @@
 import { Router } from 'express';
 import { body, validationResult } from 'express-validator';
 import { Request, Response } from 'express';
-import { asyncHandler } from '../middleware/errorHandler.js';
-import jwt from 'jsonwebtoken';
+import { asyncHandler } from '../middleware/errorHandler';
+import * as jwt from 'jsonwebtoken';
+import { AuthService } from '../services/authService';
+import { UserService } from '../services/userService';
 
 const router = Router();
 
 // Validation middleware
 const validateUserRegistration = [
-  body('email').isEmail().normalizeEmail(),
+  body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
   body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
-  body('companyName').notEmpty().trim().escape(),
-  body('companyType').isIn(['MANUFACTURER', 'DISTRIBUTOR', 'RETAILER', 'LOGISTICS']),
-  body('walletAddress').optional().isEthereumAddress()
+  body('firstName').optional().trim().escape(),
+  body('lastName').optional().trim().escape(),
+  body('role').optional().isIn(['USER', 'MANUFACTURER', 'DISTRIBUTOR', 'RETAILER', 'ADMIN']),
+  body('walletAddress').optional().isEthereumAddress().withMessage('Valid Ethereum address required'),
+  // Legacy fields for backward compatibility
+  body('companyName').optional().trim().escape(),
+  body('companyType').optional().isIn(['MANUFACTURER', 'DISTRIBUTOR', 'RETAILER', 'LOGISTICS'])
 ];
 
 const validateUserLogin = [
@@ -25,29 +31,67 @@ router.post('/register', validateUserRegistration, asyncHandler(async (req: Requ
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({
+      success: false,
       error: 'Validation failed',
       details: errors.array()
     });
   }
 
-  const { email, password, companyName, companyType, walletAddress } = req.body;
+  const { email, password, firstName, lastName, role, walletAddress } = req.body;
 
-  // TODO: Implement user registration logic
-  // 1. Check if user already exists
-  // 2. Hash password
-  // 3. Create user in database
-  // 4. Generate JWT token
-  // 5. Send welcome email
+  // Log registration attempt
+  await AuthService.logSecurityEvent(
+    'user_registration_attempt',
+    'info',
+    `Registration attempt for email: ${email}`,
+    { email, hasWalletAddress: !!walletAddress },
+    req.ip,
+    req.get('User-Agent')
+  );
 
-  return res.status(201).json({
-    message: 'User registered successfully',
-    user: {
-      email,
-      companyName,
-      companyType,
-      walletAddress
-    }
+  // Register user using AuthService
+  const result = await AuthService.registerUser({
+    email,
+    password,
+    firstName,
+    lastName,
+    role,
+    walletAddress
   });
+
+  if (result.success) {
+    // Log successful registration
+    await AuthService.logSecurityEvent(
+      'user_registration_success',
+      'info',
+      `User registered successfully: ${email}`,
+      { userId: result.user?.id, email },
+      req.ip,
+      req.get('User-Agent')
+    );
+
+    return res.status(201).json({
+      success: true,
+      message: 'User registered successfully',
+      token: result.token,
+      user: result.user
+    });
+  } else {
+    // Log failed registration
+    await AuthService.logSecurityEvent(
+      'user_registration_failure',
+      'warning',
+      `Registration failed for email: ${email}`,
+      { email, error: result.error },
+      req.ip,
+      req.get('User-Agent')
+    );
+
+    return res.status(400).json({
+      success: false,
+      error: result.error
+    });
+  }
 }));
 
 // User login
@@ -55,6 +99,7 @@ router.post('/login', validateUserLogin, asyncHandler(async (req: Request, res: 
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({
+      success: false,
       error: 'Validation failed',
       details: errors.array()
     });
@@ -62,32 +107,52 @@ router.post('/login', validateUserLogin, asyncHandler(async (req: Request, res: 
 
   const { email, password } = req.body;
 
-  // TODO: Implement user login logic
-  // 1. Find user by email
-  // 2. Verify password
-  // 3. Generate JWT token
-  // 4. Update last login timestamp
-
-  // For demo purposes, generate a real JWT token
-  const secret = process.env.JWT_SECRET || 'tracechain_jwt_secret_key_2025_development';
-  const token = jwt.sign(
-    { 
-      id: '1', 
-      email: email, 
-      role: 'MANUFACTURER' 
-    },
-    secret,
-    { expiresIn: '24h' }
+  // Log login attempt
+  await AuthService.logSecurityEvent(
+    'user_login_attempt',
+    'info',
+    `Login attempt for email: ${email}`,
+    { email },
+    req.ip,
+    req.get('User-Agent')
   );
 
-  return res.json({
-    message: 'Login successful',
-    token: token,
-    user: {
-      email,
-      role: 'MANUFACTURER' // TODO: Get from database
-    }
-  });
+  // Use AuthService for login
+  const result = await AuthService.loginUser({ email, password });
+
+  if (result.success) {
+    // Log successful login
+    await AuthService.logSecurityEvent(
+      'user_login_success',
+      'info',
+      `User logged in successfully: ${email}`,
+      { userId: result.user?.id, email },
+      req.ip,
+      req.get('User-Agent')
+    );
+
+    return res.json({
+      success: true,
+      message: 'Login successful',
+      token: result.token,
+      user: result.user
+    });
+  } else {
+    // Log failed login
+    await AuthService.logSecurityEvent(
+      'user_login_failure',
+      'warning',
+      `Login failed for email: ${email}`,
+      { email, error: result.error },
+      req.ip,
+      req.get('User-Agent')
+    );
+
+    return res.status(401).json({
+      success: false,
+      error: result.error
+    });
+  }
 }));
 
 // Web3 wallet authentication

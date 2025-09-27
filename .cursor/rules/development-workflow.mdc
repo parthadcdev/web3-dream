@@ -1,15 +1,37 @@
 ---
 alwaysApply: true
-description: Development workflow and best practices for TraceChain
+description: Development workflow and project structure
 ---
 
 # Development Workflow for TraceChain
 
 ## Getting Started
 1. **Start MCP Server**: `./run-mcp-unified.sh start`
-2. **Start Services**: `./run-app.sh start` or `make run`
-3. **Build Project**: `make build` or `./build-app.sh`
-4. **Run Tests**: `make test` or individual component tests
+2. **Build Backend**: `cd backend && npm run build`
+3. **Start Backend**: `cd backend && npm start`
+4. **Build Frontend**: `cd frontend && npm run build`
+5. **Serve Frontend**: `cd frontend/build && python3 -m http.server 3001`
+6. **Run Tests**: `make test` or individual component tests
+
+## Port Configuration
+- **Backend**: Port 3000 (Node.js + Express)
+- **Frontend**: Port 3001 (React build served via Python HTTP server)
+- **Smart Contracts**: Port 8545 (Hardhat local node)
+- **Database**: Neon PostgreSQL (external, serverless)
+
+## Database Configuration
+- **Database**: Neon PostgreSQL (serverless)
+- **ORM**: Prisma
+- **Connection**: SSL required, external connection string
+- **Setup**: Use `scripts/setup-neon.sh` for initial setup
+- **Migrations**: `npx prisma migrate dev`
+- **Studio**: `npx prisma studio`
+
+## Authentication Providers
+- **Traditional Auth**: Email/password with bcrypt hashing
+- **Stytch Integration**: Magic links and OTP authentication
+- **Web3 Auth**: MetaMask wallet authentication
+- **JWT Tokens**: Secure session management
 
 ## Daily Development Workflow
 1. **Check Project Health**: Use MCP `check_project_health` tool
@@ -52,8 +74,19 @@ description: Development workflow and best practices for TraceChain
 - **Metrics**: Use Prometheus and Grafana for monitoring
 - **MCP Status**: Use `./run-mcp-unified.sh status`
 
-## Troubleshooting
-- **Port Conflicts**: Check `lsof -i :PORT` for port usage
-- **Docker Issues**: Use `docker-compose logs SERVICE`
-- **MCP Issues**: Check MCP server logs
-- **Build Issues**: Clean build directories and rebuild
+## Common Issues and Solutions
+
+### Port Conflicts
+- **EADDRINUSE Error**: Port 3000 already in use
+  - Solution: Kill existing processes: `lsof -ti:3000 | xargs kill -9`
+  - Check running processes: `ps aux | grep -E "(npm|node)" | grep -v grep`
+
+### TypeScript Compilation Issues
+- **TS7030 Error**: Not all code paths return a value
+  - Ensure all async functions have explicit return statements
+  - Use `return res.status().json()` instead of just `res.status().json()`
+
+### Development vs Production Builds
+- **Backend**: Use `npm run build` then `npm start` for production mode
+- **Frontend**: Use `npm run build` then serve with Python HTTP server
+- **Development Mode**: `npm run dev` (if available, but may have compilation issues)

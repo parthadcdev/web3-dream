@@ -1,29 +1,31 @@
-import { Router } from 'express';
-import { body, validationResult } from 'express-validator';
-import { asyncHandler } from '../middleware/errorHandler.js';
-import { requireResourcePermission, auditLog, Resource, Permission } from '../middleware/authorization.js';
-import { validate, sanitize, validationGroups } from '../middleware/validation.js';
-const router = Router();
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const express_validator_1 = require("express-validator");
+const errorHandler_1 = require("../middleware/errorHandler");
+const authorization_1 = require("../middleware/authorization");
+const validation_1 = require("../middleware/validation");
+const router = (0, express_1.Router)();
 // Validation middleware
 const validateProductRegistration = [
-    body('name').notEmpty().trim().escape(),
-    body('type').isIn(['PHARMACEUTICAL', 'LUXURY', 'ELECTRONICS', 'FOOD', 'OTHER']),
-    body('batchNumber').notEmpty().trim(),
-    body('manufactureDate').isISO8601(),
-    body('expiryDate').optional().isISO8601(),
-    body('rawMaterials').isArray().withMessage('Raw materials must be an array'),
-    body('metadataURI').optional().isURL()
+    (0, express_validator_1.body)('name').notEmpty().trim().escape(),
+    (0, express_validator_1.body)('type').isIn(['PHARMACEUTICAL', 'LUXURY', 'ELECTRONICS', 'FOOD', 'OTHER']),
+    (0, express_validator_1.body)('batchNumber').notEmpty().trim(),
+    (0, express_validator_1.body)('manufactureDate').isISO8601(),
+    (0, express_validator_1.body)('expiryDate').optional().isISO8601(),
+    (0, express_validator_1.body)('rawMaterials').isArray().withMessage('Raw materials must be an array'),
+    (0, express_validator_1.body)('metadataURI').optional().isURL()
 ];
 const validateCheckpoint = [
-    body('status').notEmpty().trim(),
-    body('location').notEmpty().trim(),
-    body('additionalData').optional().trim(),
-    body('temperature').optional().trim(),
-    body('humidity').optional().trim()
+    (0, express_validator_1.body)('status').notEmpty().trim(),
+    (0, express_validator_1.body)('location').notEmpty().trim(),
+    (0, express_validator_1.body)('additionalData').optional().trim(),
+    (0, express_validator_1.body)('temperature').optional().trim(),
+    (0, express_validator_1.body)('humidity').optional().trim()
 ];
 // Get all products for authenticated user
-router.get('/', validate(validationGroups.product.query), sanitize, requireResourcePermission(Resource.PRODUCT, Permission.READ), auditLog('product_list', Resource.PRODUCT), asyncHandler(async (req, res) => {
-    const errors = validationResult(req);
+router.get('/', (0, validation_1.validate)(validation_1.validationGroups.product.query), validation_1.sanitize, (0, authorization_1.requireResourcePermission)(authorization_1.Resource.PRODUCT, authorization_1.Permission.READ), (0, authorization_1.auditLog)('product_list', authorization_1.Resource.PRODUCT), (0, errorHandler_1.asyncHandler)(async (req, res) => {
+    const errors = (0, express_validator_1.validationResult)(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({
             error: 'Validation failed',
@@ -60,7 +62,7 @@ router.get('/', validate(validationGroups.product.query), sanitize, requireResou
     });
 }));
 // Get specific product by ID
-router.get('/:id', asyncHandler(async (req, res) => {
+router.get('/:id', (0, errorHandler_1.asyncHandler)(async (req, res) => {
     const { id } = req.params;
     const userId = req.user?.id;
     // TODO: Implement product retrieval logic
@@ -95,8 +97,8 @@ router.get('/:id', asyncHandler(async (req, res) => {
     return res.json({ product });
 }));
 // Register new product
-router.post('/', validateProductRegistration, asyncHandler(async (req, res) => {
-    const errors = validationResult(req);
+router.post('/', validateProductRegistration, (0, errorHandler_1.asyncHandler)(async (req, res) => {
+    const errors = (0, express_validator_1.validationResult)(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({
             error: 'Validation failed',
@@ -130,8 +132,8 @@ router.post('/', validateProductRegistration, asyncHandler(async (req, res) => {
     });
 }));
 // Add checkpoint to product
-router.post('/:id/checkpoints', validateCheckpoint, asyncHandler(async (req, res) => {
-    const errors = validationResult(req);
+router.post('/:id/checkpoints', validateCheckpoint, (0, errorHandler_1.asyncHandler)(async (req, res) => {
+    const errors = (0, express_validator_1.validationResult)(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({
             error: 'Validation failed',
@@ -165,9 +167,9 @@ router.post('/:id/checkpoints', validateCheckpoint, asyncHandler(async (req, res
 }));
 // Add stakeholder to product
 router.post('/:id/stakeholders', [
-    body('stakeholderAddress').isEthereumAddress()
-], asyncHandler(async (req, res) => {
-    const errors = validationResult(req);
+    (0, express_validator_1.body)('stakeholderAddress').isEthereumAddress()
+], (0, errorHandler_1.asyncHandler)(async (req, res) => {
+    const errors = (0, express_validator_1.validationResult)(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({
             error: 'Validation failed',
@@ -192,7 +194,7 @@ router.post('/:id/stakeholders', [
     });
 }));
 // Get product verification info (public endpoint)
-router.get('/:id/verify', asyncHandler(async (req, res) => {
+router.get('/:id/verify', (0, errorHandler_1.asyncHandler)(async (req, res) => {
     const { id } = req.params;
     // TODO: Implement public verification logic
     // 1. Get product information
@@ -220,10 +222,10 @@ router.get('/:id/verify', asyncHandler(async (req, res) => {
 }));
 // Update product
 router.put('/:id', [
-    body('name').optional().trim().escape(),
-    body('metadataURI').optional().isURL()
-], asyncHandler(async (req, res) => {
-    const errors = validationResult(req);
+    (0, express_validator_1.body)('name').optional().trim().escape(),
+    (0, express_validator_1.body)('metadataURI').optional().isURL()
+], (0, errorHandler_1.asyncHandler)(async (req, res) => {
+    const errors = (0, express_validator_1.validationResult)(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({
             error: 'Validation failed',
@@ -246,5 +248,5 @@ router.put('/:id', [
         }
     });
 }));
-export default router;
+exports.default = router;
 //# sourceMappingURL=products.js.map

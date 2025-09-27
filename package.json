@@ -1,0 +1,33 @@
+{
+  "name": "tracechain",
+  "version": "1.0.0",
+  "description": "Decentralized traceability platform for supply chain management",
+  "main": "index.js",
+  "scripts": {
+    "start": "./run-app.sh",
+    "build": "./build-app.sh",
+    "test": "npm run test --prefix backend && npm run test --prefix frontend && npm run test --prefix smart-contracts",
+    "dev": "./run-app.sh dev",
+    "stop": "./run-app.sh stop",
+    "status": "./run-app.sh status",
+    "logs": "./run-app.sh logs"
+  },
+  "keywords": [
+    "blockchain",
+    "traceability",
+    "supply-chain",
+    "web3",
+    "ethereum",
+    "polygon"
+  ],
+  "author": "TraceChain Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-org/web3-dream.git"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  }
+}
