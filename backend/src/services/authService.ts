@@ -151,12 +151,11 @@ export class AuthService {
       const user = await prisma.user.create({
         data: {
           email: data.email,
+          password: hashedPassword, // Store hashed password
           firstName: data.firstName || null,
           lastName: data.lastName || null,
           role: data.role || 'USER',
           walletAddress: data.walletAddress || null,
-          // Note: We're not storing the password in the current schema
-          // This would need to be added to the Prisma schema if we want traditional auth
         }
       });
 
@@ -186,7 +185,6 @@ export class AuthService {
 
   /**
    * Login user with email and password
-   * Note: This requires password field to be added to User model
    */
   static async loginUser(credentials: LoginCredentials): Promise<AuthResponse> {
     try {
@@ -202,11 +200,37 @@ export class AuthService {
         };
       }
 
-      // Note: Password verification would require password field in User model
-      // For now, we'll return an error indicating this needs to be implemented
+      // Check if user has a password (for traditional auth)
+      if (!user.password) {
+        return {
+          success: false,
+          error: 'This account uses Stytch authentication. Please use magic link or OTP login.'
+        };
+      }
+
+      // Verify password
+      const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
+      if (!isPasswordValid) {
+        return {
+          success: false,
+          error: 'Invalid email or password'
+        };
+      }
+
+      // Generate JWT token
+      const token = this.generateToken(user);
+
       return {
-        success: false,
-        error: 'Password-based login not yet implemented. Please use Stytch authentication or wallet authentication.'
+        success: true,
+        token,
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName || undefined,
+          lastName: user.lastName || undefined,
+          role: user.role,
+          walletAddress: user.walletAddress || undefined
+        }
       };
     } catch (error: any) {
       console.error('User login error:', error);
